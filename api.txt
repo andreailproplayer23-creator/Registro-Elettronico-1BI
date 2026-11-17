@@ -1,0 +1,8 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyC3B-HBxOB020rKQTOLZQ1GrLbTP7zf_gk",
+  authDomain: "registro-elettronico-1bi.firebaseapp.com",
+  projectId: "registro-elettronico-1bi",
+  storageBucket: "registro-elettronico-1bi.firebasestorage.app",
+  messagingSenderId: "467293141486",
+  appId: "1:467293141486:web:f8ee3f8fe8c1a092ef76ff"
+};
