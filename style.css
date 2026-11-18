@@ -1,156 +1,366 @@
-/* Importiamo un font moderno */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Sfondo animato per tutto il sito */
+/* ---------- TEMA ULTRA-PREMIUM OBSIDIAN ---------- */
 body {
+    background-color: #09090b; /* Nero/Zinc profondissimo */
+    color: #e4e4e7;
     min-height: 100vh;
-    background: linear-gradient(45deg, #1a2a6c, #b21f1f, #fdbb2d);
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
 }
 
-@keyframes gradientBG {
+/* Scrollbar invisibile/elegante */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+/* =========================================
+   ANIMAZIONI GLOBALI
+   ========================================= */
+@keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatBlob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes gradientShift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
-/* Stile Base Glassmorphism */
-.glass-container {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-/* Box di Login specifico */
-.login-box {
-    width: 400px;
-    padding: 40px;
-    text-align: center;
-    transform: translateY(20px);
-    opacity: 0;
-    animation: slideUpFade 0.6s ease forwards;
-}
-
-@keyframes slideUpFade {
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.login-header h2 {
-    font-size: 28px;
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.login-header p {
-    font-size: 14px;
-    font-weight: 300;
-    margin-bottom: 30px;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-/* Input Styles */
-.input-group {
-    position: relative;
-    margin-bottom: 30px;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 10px 0;
-    font-size: 16px;
-    color: #fff;
-    border: none;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-    outline: none;
-    background: transparent;
-    transition: 0.3s;
-}
-
-.input-group label {
-    position: absolute;
-    top: 10px;
-    left: 0;
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.6);
-    pointer-events: none;
-    transition: 0.3s;
-}
-
-.input-group input:focus ~ label,
-.input-group input:valid ~ label {
-    top: -20px;
-    font-size: 12px;
-    color: #fff;
-}
-
-.input-group input:focus {
-    border-bottom: 2px solid #fff;
-}
-
-/* Bottoni Glass */
-.glass-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-/* Messaggi ed Errori */
-.error-message {
-    color: #ff4d4d;
-    font-size: 14px;
-    margin-bottom: 15px;
-    min-height: 20px;
-}
-
-/* Loader */
-.loader {
-    border: 4px solid rgba(255,255,255,0.1);
-    border-top: 4px solid #fff;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    margin: 20px auto 0;
-}
-
-.hidden {
-    display: none;
-}
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* =========================================
+   PAGINA DI LOGIN (Animata)
+   ========================================= */
+.login-body {
+    background: #09090b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Orbs luminosi fluttuanti in background */
+.login-body::before, .login-body::after {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    filter: blur(120px);
+    z-index: 0;
+    animation: floatBlob 15s infinite ease-in-out alternate;
+}
+.login-body::before {
+    background: rgba(99, 102, 241, 0.15); /* Indaco */
+    top: -150px; left: -150px;
+}
+.login-body::after {
+    background: rgba(168, 85, 247, 0.15); /* Viola */
+    bottom: -150px; right: -150px;
+    animation-delay: -5s;
+}
+
+.login-box {
+    position: relative;
+    z-index: 1;
+    background: rgba(24, 24, 27, 0.5);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding: 45px 40px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    width: 400px;
+    text-align: center;
+    animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.login-header h2 { 
+    color: #fafafa; 
+    font-size: 28px; 
+    margin-bottom: 6px; 
+    font-weight: 700; 
+    letter-spacing: -0.5px; 
+}
+.login-header p { 
+    color: #818cf8; 
+    font-size: 14px; 
+    margin-bottom: 40px; 
+    font-weight: 500; 
+}
+
+/* =========================================
+   INPUT E CAMPI DI TESTO (Corretti)
+   ========================================= */
+.input-group { 
+    margin-bottom: 24px; 
+    text-align: left; 
+    position: relative; 
+}
+
+.input-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e4e4e7;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    padding-left: 4px;
+}
+
+.input-group input, .input-group textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    font-size: 15px;
+    color: #fafafa;
+    background: rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.input-group input::placeholder, .input-group textarea::placeholder {
+    color: #52525b;
+    font-size: 14px;
+}
+
+.input-group input:hover, .input-group textarea:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.input-group input:focus, .input-group textarea:focus {
+    border-color: #818cf8;
+    background: rgba(0, 0, 0, 0.6);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15), inset 0 2px 4px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+}
+
+/* =========================================
+   BOTTONI 
+   ========================================= */
+.glass-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    background-size: 200% 200%;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    animation: gradientShift 4s ease infinite;
+}
+.glass-btn:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.glass-btn-small {
+    padding: 8px 16px; border-radius: 10px; background: rgba(255, 255, 255, 0.03); color: #a1a1aa;
+    border: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s ease;
+}
+.glass-btn-small:hover { background: rgba(255, 255, 255, 0.08); color: #fafafa; }
+.glass-btn-small.active { background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }
+
+#logoutBtn { background: transparent; color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+#logoutBtn:hover { background: rgba(239, 68, 68, 0.1); }
+
+/* Messaggi ed Errori */
+.error-message { color: #ef4444; font-size: 13px; margin-bottom: 20px; min-height: 20px; font-weight: 500; }
+.loader {
+    border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #818cf8;
+    border-radius: 50%; width: 25px; height: 25px;
+    animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; margin: 20px auto 0;
+}
+.hidden { display: none !important; }
+
+/* =========================================
+   NAVBAR
+   ========================================= */
+.glass-navbar {
+    display: flex; justify-content: space-between; align-items: center; padding: 16px 40px;
+    background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { font-size: 18px; font-weight: 700; color: #fafafa; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
+.nav-logo::before {
+    content: ''; display: block; width: 24px; height: 24px;
+    background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 6px; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+.nav-user { display: flex; align-items: center; gap: 20px; font-weight: 500; color: #a1a1aa; font-size: 13px; }
+
+/* =========================================
+   LAYOUT DASHBOARD PRINCIPALE
+   ========================================= */
+.dashboard-container {
+    display: flex; height: calc(100vh - 65px); padding: 24px; gap: 24px; max-width: 1600px; margin: 0 auto;
+}
+
+.glass-sidebar {
+    width: 250px; display: flex; flex-direction: column; gap: 6px; background: rgba(24, 24, 27, 0.4);
+    padding: 20px 16px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+.tab-btn {
+    padding: 12px 16px; text-align: left; background: transparent; border: 1px solid transparent;
+    color: #a1a1aa; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s ease;
+}
+.tab-btn:hover { background: rgba(255, 255, 255, 0.03); color: #fafafa; }
+.tab-btn.active { 
+    background: rgba(99, 102, 241, 0.1); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.glass-content {
+    flex: 1; background: rgba(24, 24, 27, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px; padding: 35px 45px; border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05); overflow-y: auto;
+}
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+.section-header h2 { color: #fafafa; font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+
+/* =========================================
+   CALENDARIO
+   ========================================= */
+.calendar-controls { display: flex; gap: 8px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; width: 100%; }
+.calendar-day {
+    background: rgba(9, 9, 11, 0.5); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 16px;
+    min-height: 130px; padding: 16px; font-size: 14px; font-weight: 500; color: #71717a; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.calendar-day.header {
+    min-height: auto; text-align: center; font-weight: 600; background: transparent; color: #71717a;
+    padding: 8px 0; border: none; text-transform: uppercase; font-size: 11px; letter-spacing: 1.5px;
+}
+.calendar-day:hover:not(.header) { 
+    background: rgba(39, 39, 42, 0.6); border-color: rgba(99, 102, 241, 0.4); transform: translateY(-4px); color: #fafafa; box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+}
+.day-number { font-weight: 700; color: #a1a1aa; margin-bottom: 8px; display: block; font-size: 13px; }
+.events-container { display: flex; flex-direction: column; gap: 6px; }
+.evento-badge {
+    background: rgba(99, 102, 241, 0.15); color: #818cf8; padding: 6px 10px; border-radius: 8px; font-size: 12px;
+    font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border: 1px solid rgba(99, 102, 241, 0.25); transition: all 0.2s ease;
+}
+.evento-badge:hover { background: rgba(99, 102, 241, 0.25); transform: scale(1.02); }
+
+/* =========================================
+   DATI DINAMICI & BACHECA
+   ========================================= */
+.bacheca-split { display: flex; gap: 40px; height: calc(100% - 60px); }
+.bacheca-col { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.col-header { display: flex; justify-content: space-between; align-items: center; }
+.bacheca-col h3 { font-size: 14px; color: #a1a1aa; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+.list-container {
+    flex: 1; background: rgba(9, 9, 11, 0.5); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 16px; padding: 24px; overflow-y: auto;
+}
+.info-text { color: #71717a; font-size: 14px; }
+
+.comunicazione-card {
+    background: rgba(24, 24, 27, 0.8); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 16px; transition: 0.2s;
+}
+.comunicazione-card:hover { border-color: rgba(255,255,255,0.1); }
+.comunicazione-card h4 { color: #fafafa; margin-bottom: 6px; font-size: 16px; font-weight: 600; }
+.autore-data { font-size: 12px; color: #a1a1aa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.desc { font-size: 14px; color: #d4d4d8; margin-bottom: 16px; line-height: 1.6; }
+.allegati-list { display: flex; gap: 10px; flex-wrap: wrap; }
+.allegato-link {
+    display: inline-block; background: rgba(16, 185, 129, 0.1); color: #34d399; padding: 8px 16px; border-radius: 10px;
+    text-decoration: none; font-size: 12px; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.2); transition: 0.2s;
+}
+.allegato-link:hover { background: rgba(16, 185, 129, 0.2); color: #fff; }
+
+/* =========================================
+   POPUP (MODALS)
+   ========================================= */
+.glass-modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(12px); z-index: 1000; justify-content: center; align-items: center;
+}
+.modal-content {
+    background: #18181b; width: 550px; padding: 40px; border-radius: 24px; position: relative; border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.modal-content h2 { color: #fafafa; margin-bottom: 25px; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;}
+.close-btn { position: absolute; top: 20px; right: 25px; font-size: 24px; cursor: pointer; color: #71717a; transition: 0.2s; }
+.close-btn:hover { color: #ef4444; }
+.checkbox-group { margin-bottom: 24px; display: flex; align-items: center; gap: 12px; font-size: 14px; color: #a1a1aa; font-weight: 500; }
+.time-group { display: flex; gap: 20px; }
+.file-group { margin-bottom: 30px; background: #09090b; padding: 20px; border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15); transition: 0.2s; }
+.file-group:hover { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+.file-group input { width: 100%; color: #a1a1aa; margin-top: 10px; font-size: 13px; }
+
+/* =========================================
+   ANIMAZIONI FLUIDE E MODERNE (UI)
+   ========================================= */
+
+/* 1. Animazione sfondo scuro dei Popup (Fade In) */
+@keyframes fadeInBackdrop {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to { opacity: 1; backdrop-filter: blur(8px); }
+}
+
+/* 2. Animazione contenuto Popup (Scale Up con effetto rimbalzo morbido) */
+@keyframes scaleUpBounce {
+    from { transform: scale(0.8) translateY(40px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Applichiamo le animazioni ai Modal */
+.glass-modal {
+    animation: fadeInBackdrop 0.3s ease-out forwards;
+}
+
+.glass-modal .modal-content {
+    animation: scaleUpBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 3. Animazione Calendario (Fade e Slide verso l'alto) */
+@keyframes slideFadeIn {
+    from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0px); }
+}
+
+/* 4. Effetto Hover più figo sui bottoni */
+.glass-btn, .glass-btn-small, .tab-btn {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-btn:hover, .glass-btn-small:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); /* Bagliore rosso */
+}
+
+.glass-btn:active, .glass-btn-small:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+/* Animazione per i singoli giorni nella griglia (effetto a cascata) */
+.calendar-day {
+    animation: slideFadeIn 0.4s ease-out backwards;
 }

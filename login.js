@@ -1,11 +1,11 @@
 // INSERITE QUI I DATI DAL VOSTRO api.txt
 const firebaseConfig = {
-    apiKey: "INCOLLA_LA_TUA_API_KEY",
-    authDomain: "INCOLLA_IL_TUO_AUTH_DOMAIN",
-    projectId: "INCOLLA_IL_TUO_PROJECT_ID",
-    storageBucket: "INCOLLA_IL_TUO_STORAGE_BUCKET",
-    messagingSenderId: "INCOLLA_IL_TUO_MESSAGING_SENDER_ID",
-    appId: "INCOLLA_IL_TUO_APP_ID"
+  apiKey: "AIzaSyC3B-HBxOB020rKQTOLZQ1GrLbTP7zf_gk",
+  authDomain: "registro-elettronico-1bi.firebaseapp.com",
+  projectId: "registro-elettronico-1bi",
+  storageBucket: "registro-elettronico-1bi.firebasestorage.app",
+  messagingSenderId: "467293141486",
+  appId: "1:467293141486:web:f8ee3f8fe8c1a092ef76ff"
 };
 
 // Inizializza Firebase

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Studente - 1BI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+    
+    <!-- Navbar Superiore -->
+    <nav class="glass-navbar">
+        <div class="nav-logo">Registro 1BI - Area Studenti</div>
+        <div class="nav-user">
+            <span id="nomeUtenteDisplay">Caricamento...</span>
+            <button id="logoutBtn" class="glass-btn-small">Esci</button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Menu Laterale (Tabs) -->
+        <aside class="glass-sidebar">
+            <button class="tab-btn active" onclick="apriTab('agenda')">📅 Agenda</button>
+            <button class="tab-btn" onclick="apriTab('bacheca')">📌 Bacheca</button>
+        </aside>
+
+        <!-- Contenuto Principale -->
+        <main class="glass-content">
+            
+            <!-- SEZIONE AGENDA -->
+            <section id="agenda" class="tab-content active">
+                <div class="section-header">
+                    <h2>Agenda</h2>
+                    <div class="calendar-controls">
+                        <button class="glass-btn-small">Giorno</button>
+                        <button class="glass-btn-small">Settimana</button>
+                        <button class="glass-btn-small active">Mese</button>
+                        <!-- Tasto "+ NUOVO" rimosso per gli studenti -->
+                    </div>
+                </div>
+                <div class="calendar-grid">
+                    <div class="calendar-day header">Lun</div><div class="calendar-day header">Mar</div><div class="calendar-day header">Mer</div><div class="calendar-day header">Gio</div><div class="calendar-day header">Ven</div><div class="calendar-day header">Sab</div><div class="calendar-day header">Dom</div>
+                    <div class="calendar-day">1</div><div class="calendar-day">2</div><div class="calendar-day">3</div><div class="calendar-day">4</div><div class="calendar-day">5</div><div class="calendar-day">6</div><div class="calendar-day">7</div>
+                </div>
+            </section>
+
+            <!-- SEZIONE BACHECA -->
+            <section id="bacheca" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Bacheca</h2>
+                </div>
+                
+                <div class="bacheca-split">
+                    <!-- Colonna Circolari -->
+                    <div class="bacheca-col">
+                        <h3>Circolari Scuola</h3>
+                        <div class="glass-card list-container" id="listaCircolari">
+                            <p class="info-text">Sincronizzazione col sito IIS Giorgi-Woolf in corso...</p>
+                        </div>
+                    </div>
+
+                    <!-- Colonna Comunicazioni -->
+                    <div class="bacheca-col">
+                        <div class="col-header">
+                            <h3>Comunicazioni Rappresentanti</h3>
+                            <!-- Tasto "+ NUOVO" rimosso per gli studenti -->
+                        </div>
+                        <div class="glass-card list-container" id="listaComunicazioni">
+                            <!-- Le comunicazioni appariranno qui -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- POPUP: Visualizza Evento Agenda (Sola Lettura) -->
+    <div id="modalVisualizzaEvento" class="glass-modal">
+        <div class="modal-content glass-container">
+            <span class="close-btn" onclick="chiudiModal('modalVisualizzaEvento')">&times;</span>
+            <h2 id="viewTipoEvento">Dettaglio Evento</h2>
+            <div style="font-weight: 300; line-height: 1.8;">
+                <p><strong>Inserito da:</strong> <span id="viewAutore"></span></p>
+                <p><strong>Data:</strong> <span id="viewData"></span></p>
+                <p><strong>Orario:</strong> <span id="viewOrario"></span></p>
+                <p style="margin-top: 15px;"><strong>Descrizione:</strong></p>
+                <div id="viewDescrizione" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);"></div>
+                
+                <div id="viewAllegatiContainer" class="hidden">
+                    <p><strong>Allegati:</strong></p>
+                    <div id="viewAllegatiList" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Moduli Firebase (Versione 10.x Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    
+    <script src="studente.js"></script>
+</body>
+</html>

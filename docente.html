@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Docente - 1BI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+    
+    <nav class="glass-navbar">
+        <div class="nav-logo">Registro 1BI - Area Docenti</div>
+        <div class="nav-user">
+            <span id="nomeUtenteDisplay">Caricamento...</span>
+            <button id="logoutBtn" class="glass-btn-small">Esci</button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <aside class="glass-sidebar">
+            <button class="tab-btn active" onclick="apriTab('agenda')">📅 Agenda</button>
+            <button class="tab-btn" onclick="apriTab('bacheca')">📌 Bacheca</button>
+        </aside>
+
+        <main class="glass-content">
+            <!-- SEZIONE AGENDA -->
+            <section id="agenda" class="tab-content active">
+                <div class="section-header">
+                    <h2>Agenda Mese</h2>
+                    <div class="calendar-controls">
+                        <button id="btnNuovoEvento" class="glass-btn-small active">+ NUOVO EVENTO</button>
+                    </div>
+                </div>
+                <!-- Griglia Dinamica -->
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Generato da JavaScript -->
+                </div>
+            </section>
+
+            <!-- SEZIONE BACHECA -->
+            <section id="bacheca" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Bacheca Scolastica</h2>
+                </div>
+                <div class="bacheca-split">
+                    <div class="bacheca-col">
+                        <h3>Circolari Scuola (IIS Giorgi-Woolf)</h3>
+                        <div class="list-container" id="listaCircolari">
+                            <div class="loader"></div>
+                            <p class="info-text" style="text-align:center; margin-top:10px;">Estrazione dal sito in corso...</p>
+                        </div>
+                    </div>
+                    <div class="bacheca-col">
+                        <div class="col-header">
+                            <h3>Comunicazioni Rappresentanti</h3>
+                            <button id="btnNuovoAnnuncio" class="glass-btn-small active">+ NUOVO ANNUNCIO</button>
+                        </div>
+                        <div class="list-container" id="listaComunicazioni">
+                            <!-- Generato da JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- POPUP: Crea Evento -->
+    <div id="modalEvento" class="glass-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="chiudiModal('modalEvento')">&times;</span>
+            <h2>Nuovo Evento Agenda</h2>
+            <form id="formEvento">
+                <div class="input-group">
+                    <input type="text" id="tipoEvento" required>
+                    <label>Tipologia (es. Compito, Spiegazione)*</label>
+                </div>
+                <div class="input-group">
+                    <input type="date" id="dataEvento" required>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="tuttaGiornata">
+                    <label for="tuttaGiornata">Tutta la giornata</label>
+                </div>
+                <div class="time-group" id="timeGroup">
+                    <div class="input-group"><label class="static-label">Ora Inizio</label><input type="time" id="oraInizio"></div>
+                    <div class="input-group"><label class="static-label">Ora Fine</label><input type="time" id="oraFine"></div>
+                </div>
+                <div class="input-group">
+                    <textarea id="descrizioneEvento" rows="3" placeholder="Descrizione (Facoltativa)"></textarea>
+                </div>
+                <div class="file-group">
+                    <label>Allegati (Max 1GB, Facoltativo)</label>
+                    <input type="file" id="fileEvento" multiple>
+                </div>
+                <button type="submit" class="glass-btn">Salva Evento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- POPUP: Crea Annuncio -->
+    <div id="modalAnnuncio" class="glass-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="chiudiModal('modalAnnuncio')">&times;</span>
+            <h2>Nuova Comunicazione</h2>
+            <form id="formAnnuncio">
+                <div class="input-group">
+                    <input type="text" id="titoloAnnuncio" required>
+                    <label>Titolo Annuncio*</label>
+                </div>
+                <div class="input-group">
+                    <textarea id="descrizioneAnnuncio" rows="4" placeholder="Descrizione (Facoltativa)"></textarea>
+                </div>
+                <div class="file-group">
+                    <label>Allegati (Facoltativo)</label>
+                    <input type="file" id="fileAnnuncio">
+                </div>
+                <button type="submit" class="glass-btn">Pubblica Comunicazione</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- POPUP: Visualizza/Elimina Evento -->
+    <div id="modalVisualizzaEvento" class="glass-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="chiudiModal('modalVisualizzaEvento')">&times;</span>
+            <h2 id="viewTipoEvento">Dettaglio</h2>
+            <div style="color: #e4e4e7;">
+                <p class="autore-data">INSERITO DA: <span id="viewAutore"></span></p>
+                <p class="autore-data">DATA E ORARIO: <span id="viewDataOrario"></span></p>
+                
+                <p class="autore-data" style="margin-top:20px;">DESCRIZIONE</p>
+                <div id="viewDescrizione" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); min-height: 60px;"></div>
+                
+                <div id="viewAllegatiContainer" class="hidden">
+                    <p class="autore-data">ALLEGATI</p>
+                    <div id="viewAllegatiList" class="allegati-list"></div>
+                </div>
+
+                <!-- Questo bottone appare solo se l'evento è tuo -->
+                <button id="btnEliminaEvento" class="glass-btn hidden" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; margin-top: 20px;">🗑️ Elimina Evento</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+    <script src="docente.js"></script>
+</body>
+</html>
