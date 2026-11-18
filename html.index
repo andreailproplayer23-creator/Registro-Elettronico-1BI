@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Registro Elettronico 1BI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+    <div class="glass-container login-box">
+        <div class="login-header">
+            <h2>Registro Elettronico</h2>
+            <p>1BI - Accesso Utenti</p>
+        </div>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="email" id="email" required autocomplete="off">
+                <label for="email">Email</label>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="password" required>
+                <label for="password">Password</label>
+            </div>
+            
+            <p id="errorMessage" class="error-message"></p>
+            
+            <button type="submit" id="loginBtn" class="glass-btn">Accedi</button>
+        </form>
+        
+        <!-- Loader animato che compare durante l'accesso -->
+        <div id="loader" class="loader hidden"></div>
+    </div>
+
+    <!-- Moduli Firebase (Versione 10.x Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    
+    <script src="login.js"></script>
+</body>
+</html>
