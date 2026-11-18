@@ -1,0 +1,8 @@
+cose che non vanno manco per il cazzo:
+1. NON VA L'INSERIMENTO DEI FILE NE SU BACHECA NE SU AGENDA
+2. BISOGNA AGGIUNGERE I TASTI ELIMINA E MODIFICA SU BACHECA
+3. BISOGNA AGGIUNGERE IL MODIFICA SU AGENDA
+5. VA SISTEMATO L'ERRORE DEL CARICAMENTO DELLE CIRCOLARI DEL SITO:
+
+Access to fetch at 'https://api.allorigins.win/get?url=https%3A%2F%2Fwww.iisgiorgiwoolf.edu.it%2Fgw%2Fcircolare%2F' from origin 'http://127.0.0.1:5500' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+api.allorigins.win/get?url=https%3A%2F%2Fwww.iisgiorgiwoolf.edu.it%2Fgw%2Fcircolare%2F:1  Failed to load resource: net::ERR_FAILED
