@@ -3,126 +3,118 @@ from bs4 import BeautifulSoup
 import hashlib
 from datetime import datetime, timezone
 import time
+import re
 
 # --- Configurazione Firebase ---
 PROJECT_ID = "registro-elettronico-1bi"
 FIRESTORE_URL = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/circolari_scuola"
 
 URL_BASE = "https://www.iisgiorgiwoolf.edu.it"
-URL_CATEGORIE = f"{URL_BASE}/gw/circolare/"
+URL_START = f"{URL_BASE}/gw/circolare/"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
-def estrai_dettagli_circolare(url_dettaglio):
-    """Visita la pagina della singola circolare ed estrae i dettagli reali."""
+def ottieni_dettagli_circolare(url_circolare):
+    """Visita la singola circolare ed estrae i dati reali e il PDF."""
     try:
-        res = requests.get(url_dettaglio, headers=HEADERS, timeout=10)
+        res = requests.get(url_circolare, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
         
-        # Estrai il titolo reale (solitamente in h1 o h2 nella pagina di dettaglio)
-        titolo = "Titolo non trovato"
-        titolo_tag = soup.find('h1') or soup.find('h2', class_='titolo-circolare') # Adatta la classe se necessario
-        if titolo_tag:
-            titolo = titolo_tag.get_text(strip=True)
-            
-        # Estrai il numero (se presente nel titolo o in un campo specifico)
+        # 1. Trova il Titolo (solitamente h1)
+        titolo_tag = soup.find('h1')
+        titolo = titolo_tag.get_text(strip=True) if titolo_tag else "Titolo non trovato"
+        
+        # 2. Cerca il numero della circolare nel testo della pagina
+        testo_pagina = soup.get_text(separator=' ', strip=True)
         numero = ""
-        numero_tag = soup.find(string=lambda t: t and "Circolare" in t and any(char.isdigit() for char in t))
-        if numero_tag:
-            numero = numero_tag.strip()
-            
-        # Estrai la descrizione
-        descrizione = ""
-        # Cerca un paragrafo subito dopo il titolo, o un div con la descrizione
-        desc_tag = soup.find('p', class_='descrizione-circolare') or soup.find('div', class_='contenuto').find('p') if soup.find('div', class_='contenuto') else None
-        if desc_tag:
-             descrizione = desc_tag.get_text(strip=True)
-             
-        # Cerca il link al PDF
-        link_pdf = url_dettaglio # Default alla pagina se non trova il PDF
-        links = soup.find_all('a', href=True)
-        for link in links:
-            href = link['href']
-            # Cerca link che finiscono in .pdf o che hanno una classe/testo indicativa
-            if href.lower().endswith('.pdf') or 'allegato' in href.lower() or 'download' in href.lower():
-                link_pdf = URL_BASE + href if href.startswith('/') else href
-                break # Prende il primo link PDF trovato
+        match = re.search(r'(Circolare|circ\.?)\s*n\.?\s*(\d+)', testo_pagina, re.IGNORECASE)
+        if match:
+            numero = match.group(0)
 
+        # 3. Trova una breve descrizione
+        descrizione = ""
+        p_tags = soup.find_all('p')
+        for p in p_tags:
+            testo_p = p.get_text(strip=True)
+            # Prendi il primo paragrafo sensato che non sia un testo di sistema
+            if len(testo_p) > 20 and "allegat" not in testo_p.lower() and "stampa" not in testo_p.lower():
+                descrizione = testo_p
+                break
+
+        # 4. Cerca specificamente il link al documento PDF
+        link_pdf = url_circolare
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            testo_link = a.get_text(strip=True).lower()
+            if href.lower().endswith('.pdf') or 'scarica' in testo_link or 'allegato' in testo_link:
+                link_pdf = URL_BASE + href if href.startswith('/') else href
+                if link_pdf.lower().endswith('.pdf'):
+                    break # Se troviamo un vero .pdf, fermiamo la ricerca
+                    
         return {
             "numero": numero,
             "titolo": titolo,
-            "descrizione": descrizione,
-            "url": link_pdf
+            "descrizione": descrizione[:150] + "..." if len(descrizione) > 150 else descrizione,
+            "url": link_pdf,
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     except Exception as e:
-        print(f"Errore nel recupero dettagli da {url_dettaglio}: {e}")
+        print(f"Errore nell'estrazione di {url_circolare}: {e}")
         return None
 
 def estrai_circolari():
-    circolari_trovate = []
+    circolari = []
+    links_visitati = set()
     
     try:
-        print("Scaricamento pagina categorie...")
-        res_cat = requests.get(URL_CATEGORIE, headers=HEADERS, timeout=15)
-        res_cat.raise_for_status()
-        soup_cat = BeautifulSoup(res_cat.text, "html.parser")
+        print("Ricerca categorie in corso...")
+        res_start = requests.get(URL_START, headers=HEADERS, timeout=10)
+        soup_start = BeautifulSoup(res_start.text, "html.parser")
         
-        link_categorie = []
-        for a in soup_cat.find_all('a', href=True):
+        link_categorie = set()
+        for a in soup_start.find_all('a', href=True):
             if '/gw/tipologia-circolare/' in a['href']:
                 href = URL_BASE + a['href'] if a['href'].startswith('/') else a['href']
-                if href not in link_categorie:
-                    link_categorie.append(href)
-
-        print(f"Trovate {len(link_categorie)} categorie da esplorare.")
-
-        for url_cat in link_categorie[:3]: 
-            print(f"Esplorando categoria: {url_cat}")
-            res_lista = requests.get(url_cat, headers=HEADERS, timeout=15)
-            soup_lista = BeautifulSoup(res_lista.text, "html.parser")
-            
-            # Cerca i link alle singole circolari
-            cards = soup_lista.find_all('article', class_='card-bg') or soup_lista.find_all('div', class_='card')
-
-            for card in cards:
-                try:
-                    link_tag = card.find('a', href=True)
-                    if not link_tag: continue
-                    
-                    url_dettaglio = URL_BASE + link_tag['href'] if link_tag['href'].startswith('/') else link_tag['href']
-                    
-                    print(f"Estrazione dettagli da: {url_dettaglio}")
-                    dettagli = estrai_dettagli_circolare(url_dettaglio)
-                    
-                    if dettagli:
-                         dettagli["timestamp_estrazione"] = datetime.now(timezone.utc).isoformat()
-                         circolari_trovate.append(dettagli)
-                    
-                    if len(circolari_trovate) >= 15:
-                        break
-                        
-                except Exception as e:
-                    print(f"Errore parsing singola card: {e}")
-                    
-            if len(circolari_trovate) >= 15:
-                break
+                link_categorie.add(href)
                 
-            time.sleep(1)
-
+        link_circolari = []
+        for url_cat in list(link_categorie)[:3]:
+            print(f"Analizzo categoria: {url_cat}")
+            res_cat = requests.get(url_cat, headers=HEADERS, timeout=10)
+            soup_cat = BeautifulSoup(res_cat.text, "html.parser")
+            
+            # Filtro critico: Cerchiamo SOLO i link che portano a singole circolari, non alle categorie
+            for a in soup_cat.find_all('a', href=True):
+                href = a['href']
+                if '/gw/circolare/' in href and '/tipologia-circolare/' not in href and href != '/gw/circolare/':
+                    url_completo = URL_BASE + href if href.startswith('/') else href
+                    if url_completo not in links_visitati:
+                        links_visitati.add(url_completo)
+                        link_circolari.append(url_completo)
+        
+        print(f"Trovate {len(link_circolari)} CIRCOLARI REALI. Inizio il download dei dati...")
+        
+        for url_circ in link_circolari[:15]: 
+            dati = ottieni_dettagli_circolare(url_circ)
+            if dati and dati["titolo"] != "Titolo non trovato":
+                circolari.append(dati)
+            time.sleep(0.5)
+            
     except Exception as e:
-        print(f"Errore generale: {e}")
-
-    return circolari_trovate
+        print(f"Errore: {e}")
+        
+    return circolari
 
 def salva_su_firebase(circolari):
     if not circolari:
-        print("Nessuna circolare valida trovata da salvare.")
+        print("Nessuna circolare da salvare.")
         return
 
     for idx, circ in enumerate(circolari):
-        doc_id = hashlib.md5(f"{circ.get('numero', '')}{circ['titolo']}".encode('utf-8')).hexdigest()
+        # Genera un ID univoco basato sul titolo per evitare duplicati
+        doc_id = hashlib.md5(circ["titolo"].encode('utf-8')).hexdigest()
         doc_url = f"{FIRESTORE_URL}/{doc_id}"
         
         payload = {
@@ -132,19 +124,14 @@ def salva_su_firebase(circolari):
                 "descrizione": {"stringValue": circ.get("descrizione", "")},
                 "url": {"stringValue": circ.get("url", "")},
                 "ordine": {"integerValue": str(idx)},
-                "aggiornatoIl": {"timestampValue": circ["timestamp_estrazione"]}
+                "aggiornatoIl": {"timestampValue": circ["timestamp"]}
             }
         }
         
-        res = requests.patch(doc_url, json=payload)
-        if res.status_code == 200:
-            print(f"[OK] Sincronizzata: {circ.get('numero', '')} - {circ['titolo'][:30]}...")
-        else:
-            print(f"[ERRORE] {res.status_code}: {res.text}")
+        requests.patch(doc_url, json=payload)
+        print(f"[OK] Salvata: {circ.get('numero', '')} {circ['titolo'][:30]}...")
 
 if __name__ == "__main__":
-    print("Inizio scansione profonda circolari (con estrazione dettagli)...")
     lista = estrai_circolari()
-    print(f"Trovate {len(lista)} circolari. Avvio salvataggio su Firebase...")
     salva_su_firebase(lista)
-    print("Operazione conclusa.")
+    print("Fine sincronizzazione.")
