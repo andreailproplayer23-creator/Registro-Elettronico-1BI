@@ -1,5 +1,7 @@
 cose che non vanno manco per il cazzo:
 1. vanno sistemate le regole per il caricamento dei file
+2. CORREGGERE L'INSERIMENTO DEGLI EVENTI IN BACHECA POICHE' NON SI SALVANO VERAMENTE SUL TABELLONE.
+3. VA SISTEMATO IL TABELLONE IN MODO CHE SI POSSA SPOSTARSI NEL CALENDARIO CON LE FRECCETTE DA INSERIRE IN ALTO AL TABELLONE E AGGIUNGERE NON SOLO PER L'ADMIN I BOTTONI CHE RIDIMENSIONANO IL TABELLONE PER MESE, SETTIMANA E GIORNO.
 2. VA SISTEMATO L'ERRORE DEL CARICAMENTO DELLE CIRCOLARI DEL SITO (nuovo errore):
 
 Access to fetch at 'https://api.allorigins.win/get?url=https%3A%2F%2Fwww.iisgiorgiwoolf.edu.it%2Fgw%2Fcircolare%2F' from origin 'http://127.0.0.1:5500' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
