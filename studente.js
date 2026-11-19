@@ -259,24 +259,27 @@ function caricaCircolariSito() {
         snapshot.forEach((doc) => {
             const c = doc.data();
             
-            // Crea una stringa con il numero se esiste
-            const numeroDisplay = c.numero ? `<span style="color: #4da6ff; font-weight: bold; margin-right: 5px;">${c.numero}</span>` : '';
-            
-            // Crea una stringa per la descrizione se esiste
+            // Format Numero e Titolo
+            const numeroDisplay = c.numero ? `<span style="color: #4da6ff; font-weight: bold; margin-right: 8px;">${c.numero}</span>` : '';
             const descrizioneDisplay = c.descrizione ? `<p style="font-size: 11px; color: #aaa; margin: 5px 0 8px 0; line-height: 1.4;">${c.descrizione}</p>` : '';
             
-            // Controlla se è un PDF per cambiare l'etichetta del bottone
-            const isPdf = c.url.toLowerCase().endsWith('.pdf');
-            const testoBottone = isPdf ? 'Scarica PDF ⬇️' : 'Apri Dettagli 🔗';
-
             lista.innerHTML += `
                 <div class="comunicazione-card" style="margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; border-left: 4px solid #4da6ff;">
                     <h4 style="margin: 0 0 5px 0; font-size: 14px; line-height: 1.4;">${numeroDisplay}${c.titolo}</h4>
                     ${descrizioneDisplay}
-                    <p class="autore-data" style="margin: 0 0 10px 0; font-size: 10px; opacity: 0.6;">IIS Giorgi-Woolf</p>
-                    <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="glass-btn-small" style="text-decoration: none; display: inline-block; background: rgba(77, 166, 255, 0.15); color: #4da6ff; padding: 6px 12px; font-size: 11px;">
-                        ${testoBottone}
-                    </a>
+                    <p class="autore-data" style="margin: 0 0 10px 0; font-size: 10px; opacity: 0.6;">IIS Giorgi-Woolf - A.S. 2026/2027</p>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <!-- Pulsante Visualizza -->
+                        <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="glass-btn-small" style="text-decoration: none; background: rgba(77, 166, 255, 0.15); color: #4da6ff; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
+                            👁️ Visualizza
+                        </a>
+                        
+                        <!-- Pulsante Scarica -->
+                        <a href="${c.url}" download class="glass-btn-small" style="text-decoration: none; background: rgba(77, 255, 166, 0.15); color: #4dffa6; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
+                            ⬇️ Scarica PDF
+                        </a>
+                    </div>
                 </div>
             `;
         });
