@@ -390,74 +390,37 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
 // ==========================================
 // CIRCOLARI SCUOLA
 // ==========================================
-async function caricaCircolariSito() {
+function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
     if (!lista) return;
-    
-    lista.innerHTML = '<p class="info-text">Caricamento circolari in corso...</p>';
-    
-    try {
-        // Usiamo AllOrigins che maschera meglio la richiesta
-        const targetUrl = 'https://www.iisgiorgiwoolf.edu.it/gw/circolare/';
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-        
-        if (!res.ok) throw new Error('Errore di rete');
-        
-        const data = await res.json();
-        const text = data.contents;
-        
-        if (!text) throw new Error('Nessun contenuto ricevuto');
 
-        const doc = new DOMParser().parseFromString(text, 'text/html');
-        
-        // Cerchiamo tutti i link. I siti scolastici spesso usano link PDF diretti o link ad articoli.
-        const links = Array.from(doc.querySelectorAll('a')).filter(a => {
-            const href = (a.getAttribute('href') || '').toLowerCase();
-            const txt = a.textContent.trim().toLowerCase();
-            
-            // Filtro più "elastico": cerca la parola "circolare" nell'URL o nel testo, oppure file PDF
-            const isCircolare = href.includes('circolare') || txt.includes('circolare');
-            const isValidText = a.textContent.trim().length > 5;
-            const notSelfLink = !href.endsWith('/gw/circolare/') && !href.endsWith('/gw/circolare');
-            
-            return (isCircolare || href.includes('.pdf')) && isValidText && notSelfLink;
-        });
-
+    db.collection("circolari_scuola").orderBy("ordine", "asc").onSnapshot((snapshot) => {
         lista.innerHTML = '';
-        
-        // Rimuoviamo i duplicati basandoci sul testo del link
-        const uniqueLinks = [];
-        const seenTexts = new Set();
-        
-        links.forEach(link => {
-            const txt = link.textContent.trim();
-            if (!seenTexts.has(txt)) {
-                seenTexts.add(txt);
-                uniqueLinks.push(link);
-            }
-        });
 
-        if(uniqueLinks.length === 0) {
-            lista.innerHTML = '<p class="info-text" style="color: #ffcc00;">Nessuna circolare recente trovata. Il sito della scuola potrebbe aver cambiato struttura.</p>';
-            console.log("HTML ricevuto (per debug):", text.substring(0, 500)); // Ti aiuta a capire cosa vede davvero il codice
+        if (snapshot.empty) {
+            lista.innerHTML = `
+                <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
+                    <p style="color: #aaa; margin-bottom: 15px; font-size: 13px;">Nessuna circolare sincronizzata al momento.</p>
+                    <a href="https://www.iisgiorgiwoolf.edu.it/gw/circolare/" target="_blank" class="glass-btn-small" style="text-decoration: none; display: inline-block;">
+                        Vai al sito dell'Istituto 🔗
+                    </a>
+                </div>
+            `;
             return;
         }
-        
-        uniqueLinks.slice(0, 10).forEach(link => {
-            let href = link.getAttribute('href');
-            // Costruiamo l'URL assoluto nel caso la scuola usi link relativi
-            const urlReale = href.startsWith('http') ? href : `https://www.iisgiorgiwoolf.edu.it${href.startsWith('/') ? '' : '/'}${href}`;
-            
+
+        snapshot.forEach((doc) => {
+            const c = doc.data();
             lista.innerHTML += `
-                <div class="comunicazione-card" style="margin-bottom: 10px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 8px; border-left: 3px solid #4da6ff;">
-                    <h4 style="margin: 0 0 5px 0; font-size: 14px;">📄 ${link.textContent.trim()}</h4>
-                    <p class="autore-data" style="margin: 0 0 8px 0; font-size: 11px; opacity: 0.7;">Sito IIS Giorgi-Woolf</p>
-                    <a href="${urlReale}" target="_blank" class="allegato-link" style="color: #4da6ff; text-decoration: none; font-size: 12px; display: inline-block;">Apri Circolare 🔗</a>
+                <div class="comunicazione-card">
+                    <h4>📄 ${c.titolo}</h4>
+                    <p class="autore-data">IIS Giorgi-Woolf</p>
+                    <a href="${c.url}" target="_blank" class="allegato-link">Apri Circolare 🔗</a>
                 </div>
             `;
         });
-    } catch (error) { 
-        console.error("Errore recupero circolari:", error);
-        lista.innerHTML = '<p class="error-message" style="color: #ff6666;">Impossibile connettersi al sito della scuola al momento.</p>'; 
-    }
+    }, (error) => {
+        console.error("Errore lettura circolari:", error);
+        lista.innerHTML = '<p class="error-message">Errore nel caricamento delle circolari.</p>';
+    });
 }

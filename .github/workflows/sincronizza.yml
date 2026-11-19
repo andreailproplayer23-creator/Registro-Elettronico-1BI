@@ -1,0 +1,28 @@
+name: Sincronizza Circolari
+
+on:
+  schedule:
+    # Esegue lo script ogni ora, al minuto zero (es. 12:00, 13:00, 14:00...)
+    - cron: "0 * * * *"
+  
+  # Questo permette di avviare lo script anche a mano con un click da GitHub
+  workflow_dispatch: 
+
+jobs:
+  aggiorna-database:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Scarica il codice della repository
+        uses: actions/checkout@v4
+
+      - name: Prepara Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installa le librerie necessarie
+        run: pip install requests beautifulsoup4
+
+      - name: Lancia lo script delle circolari
+        run: python sync_circolari.py
