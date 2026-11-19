@@ -1,4 +1,3 @@
-// INSERISCI LE TUE CHIAVI FIREBASE QUI
 const firebaseConfig = {
   apiKey: "AIzaSyC3B-HBxOB020rKQTOLZQ1GrLbTP7zf_gk",
   authDomain: "registro-elettronico-1bi.firebaseapp.com",
@@ -12,16 +11,43 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Variabili di stato per il calendario
+let dataCorrente = new Date();
+let modalitaVista = 'mese';
+let eventiLocali = [];
+
 document.addEventListener("DOMContentLoaded", () => {
-    auth.onAuthStateChanged((user) => {
-        if (!user) window.location.href = "index.html";
-        else {
-            document.getElementById('nomeUtenteDisplay').textContent = `${sessionStorage.getItem("nomeUtente")} ${sessionStorage.getItem("cognomeUtente")} (Studente)`;
-            generaCalendario();
-            ascoltaEventiAgenda();
-            ascoltaComunicazioni();
-            caricaCircolariSito();
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            window.location.href = "index.html";
+            return;
         }
+
+        // Recupero e controllo sicurezza ruolo
+        const doc = await db.collection("utenti").doc(user.uid).get();
+        if (doc.exists) {
+            const d = doc.data();
+            const ruolo = (d.ruolo || "").toLowerCase().trim();
+
+            // Reindirizza se non è studente (sicurezza aggiuntiva)
+            if (ruolo !== "studente") {
+                window.location.href = ruolo === "admin" ? "admin.html" : "docente.html";
+                return;
+            }
+
+            sessionStorage.setItem("nomeUtente", d.nome);
+            sessionStorage.setItem("cognomeUtente", d.cognome || "");
+            document.getElementById('nomeUtenteDisplay').textContent = `${d.nome} ${d.cognome || ''} (Studente)`.trim();
+        } else {
+            window.location.href = "index.html";
+            return;
+        }
+
+        impostaControlliCalendario();
+        generaCalendario();
+        ascoltaEventiAgenda();
+        ascoltaComunicazioni();
+        caricaCircolariSito();
     });
 });
 
@@ -39,81 +65,167 @@ function apriTab(tabName) {
 function apriModal(id) { document.getElementById(id).style.display = 'flex'; }
 function chiudiModal(id) { document.getElementById(id).style.display = 'none'; }
 
-function generaCalendario() {
-    // Sostituisci 'calendarGrid' con la classe se l'ID non c'è nello studente.html
-    const grid = document.querySelector('.calendar-grid');
-    grid.innerHTML = `
-        <div class="calendar-day header">LUN</div><div class="calendar-day header">MAR</div>
-        <div class="calendar-day header">MER</div><div class="calendar-day header">GIO</div>
-        <div class="calendar-day header">VEN</div><div class="calendar-day header">SAB</div>
-        <div class="calendar-day header">DOM</div>
-    `;
-    const oggi = new Date();
-    const anno = oggi.getFullYear();
-    const mese = oggi.getMonth();
-    let primoGiorno = new Date(anno, mese, 1).getDay();
-    let offset = primoGiorno === 0 ? 6 : primoGiorno - 1; 
-    const giorniNelMese = new Date(anno, mese + 1, 0).getDate();
+// ==========================================
+// GESTIONE CALENDARIO INTERATTIVO
+// ==========================================
+function impostaControlliCalendario() {
+    // Se nel tuo studente.html esistono i pulsanti Mese/Giorno o le frecce, li colleghiamo qui
+    const btnMese = document.getElementById('btnMese'); // Assicurati di avere ID corrispondenti se li usi
+    const btnGiorno = document.getElementById('btnGiorno');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
 
-    for(let i=0; i<offset; i++) grid.innerHTML += `<div class="calendar-day" style="visibility:hidden"></div>`;
+    if (btnMese) btnMese.addEventListener('click', () => { modalitaVista = 'mese'; generaCalendario(); });
+    if (btnGiorno) btnGiorno.addEventListener('click', () => { modalitaVista = 'giorno'; generaCalendario(); });
     
-    for(let i=1; i<=giorniNelMese; i++) {
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => {
+        if (modalitaVista === 'mese') dataCorrente.setMonth(dataCorrente.getMonth() - 1);
+        else dataCorrente.setDate(dataCorrente.getDate() - 1);
+        generaCalendario();
+    });
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => {
+        if (modalitaVista === 'mese') dataCorrente.setMonth(dataCorrente.getMonth() + 1);
+        else dataCorrente.setDate(dataCorrente.getDate() + 1);
+        generaCalendario();
+    });
+}
+
+window.vaiAGiorno = function(giorno) {
+    if (modalitaVista === 'mese') {
+        dataCorrente.setDate(giorno);
+        modalitaVista = 'giorno';
+        generaCalendario();
+    }
+};
+
+function generaCalendario() {
+    const grid = document.querySelector('.calendar-grid');
+    if (!grid) return;
+
+    grid.style.animation = 'none'; 
+    grid.offsetHeight; 
+    grid.style.animation = 'slideFadeIn 0.4s ease-out forwards';
+
+    const anno = dataCorrente.getFullYear();
+    const mese = dataCorrente.getMonth();
+    const giorno = dataCorrente.getDate();
+    const nomeMese = dataCorrente.toLocaleString('it-IT', { month: 'long' });
+    
+    // Aggiorna un eventuale display del mese corrente (se presente in HTML)
+    const displayMese = document.getElementById('currentMonthDisplay');
+    if (displayMese) {
+        displayMese.textContent = modalitaVista === 'mese' 
+            ? `${nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1)} ${anno}` 
+            : `${giorno} ${nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1)} ${anno}`;
+    }
+
+    grid.innerHTML = '';
+    
+    if (modalitaVista === 'mese') {
+        grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+        grid.innerHTML = `
+            <div class="calendar-day header">LUN</div><div class="calendar-day header">MAR</div>
+            <div class="calendar-day header">MER</div><div class="calendar-day header">GIO</div>
+            <div class="calendar-day header">VEN</div><div class="calendar-day header">SAB</div>
+            <div class="calendar-day header">DOM</div>
+        `;
+        let primoGiorno = new Date(anno, mese, 1).getDay();
+        let offset = primoGiorno === 0 ? 6 : primoGiorno - 1; 
+        const giorniNelMese = new Date(anno, mese + 1, 0).getDate();
+
+        for(let i=0; i<offset; i++) grid.innerHTML += `<div class="calendar-day" style="visibility:hidden"></div>`;
+        
+        for(let i=1; i<=giorniNelMese; i++) {
+            let m = (mese+1).toString().padStart(2, '0');
+            let d = i.toString().padStart(2, '0');
+            grid.innerHTML += `
+                <div class="calendar-day" onclick="vaiAGiorno(${i})" style="cursor:pointer;">
+                    <span class="day-number">${i}</span>
+                    <div class="events-container" id="events-${anno}-${m}-${d}"></div>
+                </div>
+            `;
+        }
+    } else {
+        // VISTA GIORNO SINGOLO
+        grid.style.gridTemplateColumns = '1fr';
         let m = (mese+1).toString().padStart(2, '0');
-        let d = i.toString().padStart(2, '0');
-        let dataStr = `${anno}-${m}-${d}`; 
-        grid.innerHTML += `
-            <div class="calendar-day">
-                <span class="day-number">${i}</span>
-                <div class="events-container" id="events-${dataStr}"></div>
+        let d = giorno.toString().padStart(2, '0');
+        grid.innerHTML = `
+            <div class="calendar-day" style="min-height: 400px; padding: 30px;">
+                <h3 style="color:#fafafa; margin-bottom: 25px;">Eventi del ${giorno}/${m}/${anno}</h3>
+                <div class="events-container" id="events-${anno}-${m}-${d}" style="display:flex; flex-direction:column; gap:10px;"></div>
+                <button onclick="modalitaVista='mese'; generaCalendario()" class="glass-btn-small" style="margin-top: 20px; background: rgba(255,255,255,0.1); width: fit-content;">⬅ Torna al Mese</button>
             </div>
         `;
     }
+    renderEventiStudente();
 }
 
 function ascoltaEventiAgenda() {
     db.collection("agenda").onSnapshot((snapshot) => {
-        document.querySelectorAll('.events-container').forEach(c => c.innerHTML = ''); 
-        snapshot.forEach((doc) => {
-            const ev = doc.data();
-            const contenitore = document.getElementById(`events-${ev.data}`);
-            if(contenitore) {
-                const badge = document.createElement('div');
-                badge.className = 'evento-badge';
-                badge.textContent = ev.tipologia;
-                badge.onclick = () => apriDettaglioEvento(ev);
-                contenitore.appendChild(badge);
-            }
-        });
+        eventiLocali = [];
+        snapshot.forEach((doc) => eventiLocali.push({ id: doc.id, ...doc.data() }));
+        renderEventiStudente();
     });
 }
 
-// Sola visualizzazione per lo studente
+function renderEventiStudente() {
+    document.querySelectorAll('.events-container').forEach(c => c.innerHTML = ''); 
+    eventiLocali.forEach((ev) => {
+        const contenitore = document.getElementById(`events-${ev.data}`);
+        if(contenitore) {
+            const badge = document.createElement('div');
+            badge.className = 'evento-badge';
+            
+            if (modalitaVista === 'giorno') {
+                badge.innerHTML = `<strong style="font-size:18px;">${ev.tipologia}</strong> <span style="opacity:0.7; font-size:13px;">(${ev.autoreNome})</span><br>🕒 ${ev.tuttaGiornata ? 'Tutto il giorno' : ev.oraInizio + ' - ' + ev.oraFine}`;
+            } else {
+                badge.textContent = ev.tipologia;
+            }
+            
+            // Previene l'apertura della vista giorno se si clicca sull'evento
+            badge.onclick = (e) => { 
+                e.stopPropagation(); 
+                apriDettaglioEvento(ev); 
+            };
+            contenitore.appendChild(badge);
+        }
+    });
+}
+
 function apriDettaglioEvento(evento) {
     document.getElementById('viewTipoEvento').textContent = evento.tipologia;
-    // Se viewAutore o data esistono nel vecchio html, usa quelli, altrimenti gestiamo l'errore:
     try {
-        document.getElementById('viewAutore').textContent = evento.autoreNome;
+        document.getElementById('viewAutore').textContent = evento.autoreNome || "Scuola";
         document.getElementById('viewData').textContent = evento.data;
         document.getElementById('viewOrario').textContent = evento.tuttaGiornata ? `Tutta la giornata` : `${evento.oraInizio} - ${evento.oraFine}`;
-    } catch(e) {} // Fallback se ID leggermente diversi
+    } catch(e) {}
     
-    document.getElementById('viewDescrizione').textContent = evento.descrizione || "Nessuna descrizione.";
+    document.getElementById('viewDescrizione').textContent = evento.descrizione || "Nessuna descrizione fornita.";
     
     const containerAll = document.getElementById('viewAllegatiContainer');
     const listAll = document.getElementById('viewAllegatiList');
-    listAll.innerHTML = '';
+    if (listAll) listAll.innerHTML = '';
     
     if(evento.allegati && evento.allegati.length > 0) {
-        containerAll.classList.remove('hidden');
-        evento.allegati.forEach(f => listAll.innerHTML += `<a href="${f.url}" target="_blank" class="allegato-link">📎 ${f.name}</a>`);
-    } else { containerAll.classList.add('hidden'); }
+        if(containerAll) containerAll.classList.remove('hidden');
+        evento.allegati.forEach(f => {
+            if(listAll) listAll.innerHTML += `<a href="${f.url}" target="_blank" class="allegato-link">📎 ${f.name}</a>`;
+        });
+    } else { 
+        if(containerAll) containerAll.classList.add('hidden'); 
+    }
 
     apriModal('modalVisualizzaEvento');
 }
 
+// ==========================================
+// GESTIONE BACHECA
+// ==========================================
 function ascoltaComunicazioni() {
     db.collection("bacheca_rappresentanti").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
         const lista = document.getElementById('listaComunicazioni');
+        if (!lista) return;
         lista.innerHTML = '';
         snapshot.forEach((doc) => {
             const c = doc.data();
@@ -130,24 +242,72 @@ function ascoltaComunicazioni() {
 
 async function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
+    if (!lista) return;
+    
+    lista.innerHTML = '<p class="info-text">Caricamento circolari in corso...</p>';
+    
     try {
-        const target = encodeURIComponent('https://www.iisgiorgiwoolf.edu.it/gw/circolare/');
-        const res = await fetch(`https://api.allorigins.win/get?url=${target}`);
-        const data = await res.json();
-        const doc = new DOMParser().parseFromString(data.contents, 'text/html');
-        const links = Array.from(doc.querySelectorAll('a')).filter(a => a.textContent.toLowerCase().includes('circolare'));
+        // Usiamo AllOrigins che maschera meglio la richiesta
+        const targetUrl = 'https://www.iisgiorgiwoolf.edu.it/gw/circolare/';
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
         
+        if (!res.ok) throw new Error('Errore di rete');
+        
+        const data = await res.json();
+        const text = data.contents;
+        
+        if (!text) throw new Error('Nessun contenuto ricevuto');
+
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        
+        // Cerchiamo tutti i link. I siti scolastici spesso usano link PDF diretti o link ad articoli.
+        const links = Array.from(doc.querySelectorAll('a')).filter(a => {
+            const href = (a.getAttribute('href') || '').toLowerCase();
+            const txt = a.textContent.trim().toLowerCase();
+            
+            // Filtro più "elastico": cerca la parola "circolare" nell'URL o nel testo, oppure file PDF
+            const isCircolare = href.includes('circolare') || txt.includes('circolare');
+            const isValidText = a.textContent.trim().length > 5;
+            const notSelfLink = !href.endsWith('/gw/circolare/') && !href.endsWith('/gw/circolare');
+            
+            return (isCircolare || href.includes('.pdf')) && isValidText && notSelfLink;
+        });
+
         lista.innerHTML = '';
-        if(links.length === 0) lista.innerHTML = '<p class="info-text">Nessuna circolare trovata sul sito.</p>';
-        links.slice(0, 15).forEach(link => {
-            const urlReale = link.href.startsWith('http') ? link.href : `https://www.iisgiorgiwoolf.edu.it${link.getAttribute('href')}`;
+        
+        // Rimuoviamo i duplicati basandoci sul testo del link
+        const uniqueLinks = [];
+        const seenTexts = new Set();
+        
+        links.forEach(link => {
+            const txt = link.textContent.trim();
+            if (!seenTexts.has(txt)) {
+                seenTexts.add(txt);
+                uniqueLinks.push(link);
+            }
+        });
+
+        if(uniqueLinks.length === 0) {
+            lista.innerHTML = '<p class="info-text" style="color: #ffcc00;">Nessuna circolare recente trovata. Il sito della scuola potrebbe aver cambiato struttura.</p>';
+            console.log("HTML ricevuto (per debug):", text.substring(0, 500)); // Ti aiuta a capire cosa vede davvero il codice
+            return;
+        }
+        
+        uniqueLinks.slice(0, 10).forEach(link => {
+            let href = link.getAttribute('href');
+            // Costruiamo l'URL assoluto nel caso la scuola usi link relativi
+            const urlReale = href.startsWith('http') ? href : `https://www.iisgiorgiwoolf.edu.it${href.startsWith('/') ? '' : '/'}${href}`;
+            
             lista.innerHTML += `
-                <div class="comunicazione-card">
-                    <h4>📄 ${link.textContent.trim()}</h4>
-                    <p class="autore-data">Dal sito dell'Istituto</p>
-                    <a href="${urlReale}" target="_blank" class="allegato-link">Apri Circolare 🔗</a>
+                <div class="comunicazione-card" style="margin-bottom: 10px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 8px; border-left: 3px solid #4da6ff;">
+                    <h4 style="margin: 0 0 5px 0; font-size: 14px;">📄 ${link.textContent.trim()}</h4>
+                    <p class="autore-data" style="margin: 0 0 8px 0; font-size: 11px; opacity: 0.7;">Sito IIS Giorgi-Woolf</p>
+                    <a href="${urlReale}" target="_blank" class="allegato-link" style="color: #4da6ff; text-decoration: none; font-size: 12px; display: inline-block;">Apri Circolare 🔗</a>
                 </div>
             `;
         });
-    } catch (error) { lista.innerHTML = '<p class="error-message">Impossibile caricare le circolari.</p>'; }
+    } catch (error) { 
+        console.error("Errore recupero circolari:", error);
+        lista.innerHTML = '<p class="error-message" style="color: #ff6666;">Impossibile connettersi al sito della scuola al momento.</p>'; 
+    }
 }

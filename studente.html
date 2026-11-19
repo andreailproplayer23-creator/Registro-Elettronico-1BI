@@ -31,16 +31,18 @@
             <section id="agenda" class="tab-content active">
                 <div class="section-header">
                     <h2>Agenda</h2>
-                    <div class="calendar-controls">
-                        <button class="glass-btn-small">Giorno</button>
-                        <button class="glass-btn-small">Settimana</button>
-                        <button class="glass-btn-small active">Mese</button>
-                        <!-- Tasto "+ NUOVO" rimosso per gli studenti -->
+                    <div class="calendar-controls" style="display: flex; align-items: center; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <button id="prevMonthBtn" class="glass-btn-small" style="padding: 6px 12px;">&lt;</button>
+                            <span id="currentMonthDisplay" style="color: #fafafa; font-weight: 600; font-size: 14px; min-width: 130px; text-align: center;">...</span>
+                            <button id="nextMonthBtn" class="glass-btn-small" style="padding: 6px 12px;">&gt;</button>
+                        </div>
+                        <button id="btnGiorno" class="glass-btn-small">Giorno</button>
+                        <button id="btnMese" class="glass-btn-small active">Mese</button>
                     </div>
                 </div>
-                <div class="calendar-grid">
-                    <div class="calendar-day header">Lun</div><div class="calendar-day header">Mar</div><div class="calendar-day header">Mer</div><div class="calendar-day header">Gio</div><div class="calendar-day header">Ven</div><div class="calendar-day header">Sab</div><div class="calendar-day header">Dom</div>
-                    <div class="calendar-day">1</div><div class="calendar-day">2</div><div class="calendar-day">3</div><div class="calendar-day">4</div><div class="calendar-day">5</div><div class="calendar-day">6</div><div class="calendar-day">7</div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Il calendario verrà generato da JavaScript -->
                 </div>
             </section>
 
@@ -63,7 +65,6 @@
                     <div class="bacheca-col">
                         <div class="col-header">
                             <h3>Comunicazioni Rappresentanti</h3>
-                            <!-- Tasto "+ NUOVO" rimosso per gli studenti -->
                         </div>
                         <div class="glass-card list-container" id="listaComunicazioni">
                             <!-- Le comunicazioni appariranno qui -->

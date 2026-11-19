@@ -1,6 +1,3 @@
-// ==========================================
-// 1. CHIAVI FIREBASE (Database e Auth)
-// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyC3B-HBxOB020rKQTOLZQ1GrLbTP7zf_gk",
   authDomain: "registro-elettronico-1bi.firebaseapp.com",
@@ -14,20 +11,43 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ==========================================
-// 2. CHIAVI SUPABASE (Solo per i File)
-// ==========================================
-const supabaseUrl = 'https://tzmgogjgclzhgptaostj.supabase.co/rest/v1/'; // <-- Es: https://tzmgogjgclzhgptaostj.supabase.co
-const supabaseKey = 'sb_publishable_oPP6dEhLULujKfWzUFi-3g_nXPCYS6q'; // <-- Es: sb_publishable_...
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// SUPABASE CONFIG
+const supabaseUrl = 'https://tzmgogjgclzhgptaostj.supabase.co'; 
+const supabaseKey = 'sb_publishable_oPP6dEhLULujKfWzUFi-3g_nXPCYS6q'; 
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 const BUCKET_NAME = 'storage-1bi';
 
-// Avvio
+let dataCorrente = new Date();
+let modalitaVista = 'mese';
+let eventiLocali = [];
+let comunicazioniLocali = {};
+
 document.addEventListener("DOMContentLoaded", () => {
     auth.onAuthStateChanged((user) => {
         if (!user) window.location.href = "index.html";
         else {
-            document.getElementById('nomeUtenteDisplay').textContent = `${sessionStorage.getItem("nomeUtente")} ${sessionStorage.getItem("cognomeUtente")} (Docente)`;
+            // Controllo se mancano i dati in sessione (incluso il ruolo)
+            if (!sessionStorage.getItem("nomeUtente") || !sessionStorage.getItem("ruoloUtente")) {
+                db.collection("utenti").doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const d = doc.data();
+                        sessionStorage.setItem("nomeUtente", d.nome);
+                        sessionStorage.setItem("cognomeUtente", d.cognome);
+                        sessionStorage.setItem("ruoloUtente", d.ruolo || "docente"); // Salva il ruolo, default a docente
+                        
+                        // Imposta la scritta in base al ruolo
+                        const ruoloDisplay = d.ruolo === "admin" ? "Admin" : "Docente";
+                        document.getElementById('nomeUtenteDisplay').textContent = `${d.nome} ${d.cognome} (${ruoloDisplay})`;
+                    }
+                });
+            } else {
+                // Se i dati sono già salvati nella sessione del browser
+                const nome = sessionStorage.getItem("nomeUtente");
+                const cognome = sessionStorage.getItem("cognomeUtente");
+                const ruolo = sessionStorage.getItem("ruoloUtente") === "admin" ? "Admin" : "Docente";
+                document.getElementById('nomeUtenteDisplay').textContent = `${nome} ${cognome} (${ruolo})`;
+            }
+            impostaControlliCalendario();
             generaCalendario();
             ascoltaEventiAgenda();
             ascoltaComunicazioni();
@@ -55,57 +75,121 @@ document.getElementById('btnNuovoAnnuncio').addEventListener('click', () => apri
 document.getElementById('tuttaGiornata').addEventListener('change', function() {
     document.getElementById('timeGroup').classList.toggle('hidden', this.checked);
 });
+document.getElementById('modTuttaGiornata').addEventListener('change', function() {
+    document.getElementById('modTimeGroup').classList.toggle('hidden', this.checked);
+});
 
-// 1. GENERAZIONE CALENDARIO DEL MESE
-function generaCalendario() {
-    const grid = document.getElementById('calendarGrid');
-    grid.innerHTML = `
-        <div class="calendar-day header">LUN</div><div class="calendar-day header">MAR</div>
-        <div class="calendar-day header">MER</div><div class="calendar-day header">GIO</div>
-        <div class="calendar-day header">VEN</div><div class="calendar-day header">SAB</div>
-        <div class="calendar-day header">DOM</div>
-    `;
-    const oggi = new Date();
-    const anno = oggi.getFullYear();
-    const mese = oggi.getMonth();
-    let primoGiorno = new Date(anno, mese, 1).getDay();
-    let offset = primoGiorno === 0 ? 6 : primoGiorno - 1; // Fa partire da Lunedì
-    const giorniNelMese = new Date(anno, mese + 1, 0).getDate();
-
-    for(let i=0; i<offset; i++) grid.innerHTML += `<div class="calendar-day" style="visibility:hidden"></div>`;
-    
-    for(let i=1; i<=giorniNelMese; i++) {
-        let m = (mese+1).toString().padStart(2, '0');
-        let d = i.toString().padStart(2, '0');
-        let dataStr = `${anno}-${m}-${d}`; // Formato YYYY-MM-DD
-        grid.innerHTML += `
-            <div class="calendar-day">
-                <span class="day-number">${i}</span>
-                <div class="events-container" id="events-${dataStr}"></div>
-            </div>
-        `;
-    }
-}
-
-// 2. LETTURA EVENTI IN TEMPO REALE DA FIREBASE
-function ascoltaEventiAgenda() {
-    db.collection("agenda").onSnapshot((snapshot) => {
-        document.querySelectorAll('.events-container').forEach(c => c.innerHTML = ''); // Pulisce prima di ricaricare
-        snapshot.forEach((doc) => {
-            const ev = doc.data();
-            const contenitore = document.getElementById(`events-${ev.data}`);
-            if(contenitore) {
-                const badge = document.createElement('div');
-                badge.className = 'evento-badge';
-                badge.textContent = ev.tipologia;
-                badge.onclick = () => apriDettaglioEvento(doc.id, ev);
-                contenitore.appendChild(badge);
-            }
-        });
+// ==========================================
+// CALENDARIO (MESE E VISTA SINGOLA)
+// ==========================================
+function impostaControlliCalendario() {
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        if (modalitaVista === 'mese') dataCorrente.setMonth(dataCorrente.getMonth() - 1);
+        else dataCorrente.setDate(dataCorrente.getDate() - 1);
+        generaCalendario();
+    });
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        if (modalitaVista === 'mese') dataCorrente.setMonth(dataCorrente.getMonth() + 1);
+        else dataCorrente.setDate(dataCorrente.getDate() + 1);
+        generaCalendario();
+    });
+    document.getElementById('switchViewBtn').addEventListener('click', (e) => {
+        modalitaVista = modalitaVista === 'mese' ? 'giorno' : 'mese';
+        e.target.textContent = modalitaVista === 'mese' ? 'Vista Singola' : 'Vista Mese';
+        generaCalendario();
     });
 }
 
-// 3. VISUALIZZA ED ELIMINA EVENTO
+window.vaiAGiorno = function(giorno) {
+    if (modalitaVista === 'mese') {
+        dataCorrente.setDate(giorno);
+        modalitaVista = 'giorno';
+        document.getElementById('switchViewBtn').textContent = 'Vista Mese';
+        generaCalendario();
+    }
+};
+
+function generaCalendario() {
+    const grid = document.getElementById('calendarGrid');
+    grid.style.animation = 'none'; grid.offsetHeight; grid.style.animation = 'slideFadeIn 0.4s ease-out forwards';
+
+    const anno = dataCorrente.getFullYear();
+    const mese = dataCorrente.getMonth();
+    const giorno = dataCorrente.getDate();
+    const nomeMese = dataCorrente.toLocaleString('it-IT', { month: 'long' });
+    
+    document.getElementById('currentMonthDisplay').textContent = modalitaVista === 'mese' 
+        ? `${nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1)} ${anno}` 
+        : `${giorno} ${nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1)} ${anno}`;
+
+    grid.innerHTML = '';
+    if (modalitaVista === 'mese') {
+        grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+        grid.innerHTML = `
+            <div class="calendar-day header">LUN</div><div class="calendar-day header">MAR</div>
+            <div class="calendar-day header">MER</div><div class="calendar-day header">GIO</div>
+            <div class="calendar-day header">VEN</div><div class="calendar-day header">SAB</div>
+            <div class="calendar-day header">DOM</div>
+        `;
+        let primoGiorno = new Date(anno, mese, 1).getDay();
+        let offset = primoGiorno === 0 ? 6 : primoGiorno - 1; 
+        const giorniNelMese = new Date(anno, mese + 1, 0).getDate();
+
+        for(let i=0; i<offset; i++) grid.innerHTML += `<div class="calendar-day" style="visibility:hidden"></div>`;
+        
+        for(let i=1; i<=giorniNelMese; i++) {
+            let m = (mese+1).toString().padStart(2, '0');
+            let d = i.toString().padStart(2, '0');
+            grid.innerHTML += `
+                <div class="calendar-day" onclick="vaiAGiorno(${i})" style="cursor:pointer;">
+                    <span class="day-number">${i}</span>
+                    <div class="events-container" id="events-${anno}-${m}-${d}"></div>
+                </div>
+            `;
+        }
+    } else {
+        grid.style.gridTemplateColumns = '1fr';
+        let m = (mese+1).toString().padStart(2, '0');
+        let d = giorno.toString().padStart(2, '0');
+        grid.innerHTML = `
+            <div class="calendar-day" style="min-height: 400px; padding: 30px;">
+                <h3 style="color:#fafafa; margin-bottom: 25px;">Eventi del ${giorno}/${m}/${anno}</h3>
+                <div class="events-container" id="events-${anno}-${m}-${d}" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
+        `;
+    }
+    renderEventi();
+}
+
+function ascoltaEventiAgenda() {
+    db.collection("agenda").onSnapshot((snapshot) => {
+        eventiLocali = [];
+        snapshot.forEach((doc) => eventiLocali.push({ id: doc.id, ...doc.data() }));
+        renderEventi();
+    });
+}
+
+function renderEventi() {
+    document.querySelectorAll('.events-container').forEach(c => c.innerHTML = ''); 
+    eventiLocali.forEach((ev) => {
+        const contenitore = document.getElementById(`events-${ev.data}`);
+        if(contenitore) {
+            const badge = document.createElement('div');
+            badge.className = 'evento-badge';
+            if (modalitaVista === 'giorno') {
+                badge.innerHTML = `<strong style="font-size:18px;">${ev.tipologia}</strong> <span style="opacity:0.7; font-size:13px;">(${ev.autoreNome})</span><br>🕒 ${ev.tuttaGiornata ? 'Tutto il giorno' : ev.oraInizio + ' - ' + ev.oraFine}`;
+            } else {
+                badge.textContent = ev.tipologia;
+            }
+            badge.onclick = (e) => { e.stopPropagation(); apriDettaglioEvento(ev.id, ev); };
+            contenitore.appendChild(badge);
+        }
+    });
+}
+
+// ==========================================
+// GESTIONE EVENTI (DOCENTE MODIFICA/ELIMINA SOLO I SUOI)
+// ==========================================
 function apriDettaglioEvento(id, evento) {
     document.getElementById('viewTipoEvento').textContent = evento.tipologia;
     document.getElementById('viewAutore').textContent = evento.autoreNome;
@@ -122,21 +206,54 @@ function apriDettaglioEvento(id, evento) {
     } else { containerAll.classList.add('hidden'); }
 
     const btnElimina = document.getElementById('btnEliminaEvento');
+    const btnModifica = document.getElementById('btnModificaEvento');
+
     if(evento.autoreUid === auth.currentUser.uid) {
         btnElimina.classList.remove('hidden');
+        btnModifica.classList.remove('hidden');
+
         btnElimina.onclick = () => {
             if(confirm("Vuoi davvero eliminare questo evento?")) {
                 db.collection("agenda").doc(id).delete();
                 chiudiModal('modalVisualizzaEvento');
             }
         };
+
+        btnModifica.onclick = () => {
+            chiudiModal('modalVisualizzaEvento');
+            document.getElementById('modEventoId').value = id;
+            document.getElementById('modTipoEvento').value = evento.tipologia;
+            document.getElementById('modDataEvento').value = evento.data;
+            document.getElementById('modTuttaGiornata').checked = evento.tuttaGiornata;
+            document.getElementById('modTimeGroup').classList.toggle('hidden', evento.tuttaGiornata);
+            document.getElementById('modOraInizio').value = evento.oraInizio || "";
+            document.getElementById('modOraFine').value = evento.oraFine || "";
+            document.getElementById('modDescrizioneEvento').value = evento.descrizione || "";
+            apriModal('modalModificaEvento');
+        };
     } else {
         btnElimina.classList.add('hidden');
+        btnModifica.classList.add('hidden');
     }
     apriModal('modalVisualizzaEvento');
 }
 
-// 4. SALVATAGGIO EVENTO (SUPABASE)
+document.getElementById('formModificaEvento').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('modEventoId').value;
+    try {
+        await db.collection("agenda").doc(id).update({
+            tipologia: document.getElementById('modTipoEvento').value,
+            data: document.getElementById('modDataEvento').value,
+            tuttaGiornata: document.getElementById('modTuttaGiornata').checked,
+            oraInizio: document.getElementById('modOraInizio').value || null,
+            oraFine: document.getElementById('modOraFine').value || null,
+            descrizione: document.getElementById('modDescrizioneEvento').value,
+        });
+        chiudiModal('modalModificaEvento');
+    } catch (err) { alert("Errore modifica: " + err.message); }
+});
+
 document.getElementById('formEvento').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -151,10 +268,10 @@ document.getElementById('formEvento').addEventListener('submit', async (e) => {
                 const safeName = f.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
                 const filePath = `agenda/${Date.now()}_${safeName}`;
                 
-                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
+                const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath, f);
                 if (error) throw error;
                 
-                const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                const { data: publicUrlData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(filePath);
                 fileUrls.push({ name: f.name, url: publicUrlData.publicUrl });
             }
         }
@@ -177,16 +294,30 @@ document.getElementById('formEvento').addEventListener('submit', async (e) => {
     finally { btn.textContent = "Salva Evento"; btn.disabled = false; }
 });
 
-// 5. LETTURA COMUNICAZIONI RAPPRESENTANTI
+// ==========================================
+// BACHECA (DOCENTE MODIFICA/ELIMINA SOLO I SUOI)
+// ==========================================
 function ascoltaComunicazioni() {
     db.collection("bacheca_rappresentanti").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
         const lista = document.getElementById('listaComunicazioni');
         lista.innerHTML = '';
+        comunicazioniLocali = {};
+
         snapshot.forEach((doc) => {
             const c = doc.data();
+            comunicazioniLocali[doc.id] = c;
+            const isMine = c.autoreUid === auth.currentUser.uid;
+
             lista.innerHTML += `
                 <div class="comunicazione-card">
-                    <h4>${c.titolo}</h4>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <h4>${c.titolo}</h4>
+                        ${isMine ? `
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="apriModificaAnnuncioDocente('${doc.id}')" class="glass-btn-small" style="padding: 4px 8px; font-size:12px;">✏️</button>
+                            <button onclick="eliminaAnnuncioDocente('${doc.id}')" class="glass-btn-small" style="padding: 4px 8px; font-size:12px; background:rgba(239,68,68,0.2); color:#ef4444;">🗑️</button>
+                        </div>` : ''}
+                    </div>
                     <p class="autore-data">${c.autoreNome}</p>
                     <p class="desc">${c.descrizione || ''}</p>
                     ${c.allegatoUrl ? `<a href="${c.allegatoUrl}" target="_blank" class="allegato-link">📎 ${c.allegatoNome}</a>` : ''}
@@ -195,7 +326,33 @@ function ascoltaComunicazioni() {
     });
 }
 
-// 6. SALVATAGGIO COMUNICAZIONI RAPPRESENTANTI (SUPABASE)
+window.eliminaAnnuncioDocente = (id) => {
+    if(confirm("Sei sicuro di voler eliminare questa tua comunicazione?")) {
+        db.collection("bacheca_rappresentanti").doc(id).delete();
+    }
+};
+
+window.apriModificaAnnuncioDocente = (id) => {
+    const c = comunicazioniLocali[id];
+    if(!c) return;
+    document.getElementById('modAnnuncioId').value = id;
+    document.getElementById('modTitoloAnnuncio').value = c.titolo;
+    document.getElementById('modDescrizioneAnnuncio').value = c.descrizione || '';
+    apriModal('modalModificaAnnuncio');
+};
+
+document.getElementById('formModificaAnnuncio').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('modAnnuncioId').value;
+    try {
+        await db.collection("bacheca_rappresentanti").doc(id).update({
+            titolo: document.getElementById('modTitoloAnnuncio').value,
+            descrizione: document.getElementById('modDescrizioneAnnuncio').value
+        });
+        chiudiModal('modalModificaAnnuncio');
+    } catch (err) { alert("Errore modifica: " + err.message); }
+});
+
 document.getElementById('formAnnuncio').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -208,10 +365,10 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
             const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
             const filePath = `bacheca/${Date.now()}_${safeName}`;
             
-            const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file);
+            const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath, file);
             if (error) throw error;
             
-            const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+            const { data: publicUrlData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(filePath);
             url = publicUrlData.publicUrl; 
             nome = file.name;
         }
@@ -227,34 +384,80 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
         document.getElementById('formAnnuncio').reset();
         chiudiModal('modalAnnuncio');
     } catch (err) { alert("Errore caricamento: " + err.message); } 
-    finally { btn.textContent = "Pubblica Comunicazione"; btn.disabled = false; }
+    finally { btn.textContent = "Pubblica"; btn.disabled = false; }
 });
 
-// 7. ESTRAZIONE CIRCOLARI ESTERNE TRAMITE PROXY (DOM Parsing)
+// ==========================================
+// CIRCOLARI SCUOLA
+// ==========================================
 async function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
+    if (!lista) return;
+    
+    lista.innerHTML = '<p class="info-text">Caricamento circolari in corso...</p>';
+    
     try {
-        const target = encodeURIComponent('https://www.iisgiorgiwoolf.edu.it/gw/circolare/');
-        const res = await fetch(`https://api.allorigins.win/get?url=${target}`);
+        // Usiamo AllOrigins che maschera meglio la richiesta
+        const targetUrl = 'https://www.iisgiorgiwoolf.edu.it/gw/circolare/';
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+        
+        if (!res.ok) throw new Error('Errore di rete');
+        
         const data = await res.json();
+        const text = data.contents;
         
-        const doc = new DOMParser().parseFromString(data.contents, 'text/html');
-        const links = Array.from(doc.querySelectorAll('a')).filter(a => a.textContent.toLowerCase().includes('circolare'));
+        if (!text) throw new Error('Nessun contenuto ricevuto');
+
+        const doc = new DOMParser().parseFromString(text, 'text/html');
         
+        // Cerchiamo tutti i link. I siti scolastici spesso usano link PDF diretti o link ad articoli.
+        const links = Array.from(doc.querySelectorAll('a')).filter(a => {
+            const href = (a.getAttribute('href') || '').toLowerCase();
+            const txt = a.textContent.trim().toLowerCase();
+            
+            // Filtro più "elastico": cerca la parola "circolare" nell'URL o nel testo, oppure file PDF
+            const isCircolare = href.includes('circolare') || txt.includes('circolare');
+            const isValidText = a.textContent.trim().length > 5;
+            const notSelfLink = !href.endsWith('/gw/circolare/') && !href.endsWith('/gw/circolare');
+            
+            return (isCircolare || href.includes('.pdf')) && isValidText && notSelfLink;
+        });
+
         lista.innerHTML = '';
-        if(links.length === 0) lista.innerHTML = '<p class="info-text">Nessuna circolare trovata sul sito in questo momento.</p>';
         
-        links.slice(0, 15).forEach(link => {
-            const urlReale = link.href.startsWith('http') ? link.href : `https://www.iisgiorgiwoolf.edu.it${link.getAttribute('href')}`;
+        // Rimuoviamo i duplicati basandoci sul testo del link
+        const uniqueLinks = [];
+        const seenTexts = new Set();
+        
+        links.forEach(link => {
+            const txt = link.textContent.trim();
+            if (!seenTexts.has(txt)) {
+                seenTexts.add(txt);
+                uniqueLinks.push(link);
+            }
+        });
+
+        if(uniqueLinks.length === 0) {
+            lista.innerHTML = '<p class="info-text" style="color: #ffcc00;">Nessuna circolare recente trovata. Il sito della scuola potrebbe aver cambiato struttura.</p>';
+            console.log("HTML ricevuto (per debug):", text.substring(0, 500)); // Ti aiuta a capire cosa vede davvero il codice
+            return;
+        }
+        
+        uniqueLinks.slice(0, 10).forEach(link => {
+            let href = link.getAttribute('href');
+            // Costruiamo l'URL assoluto nel caso la scuola usi link relativi
+            const urlReale = href.startsWith('http') ? href : `https://www.iisgiorgiwoolf.edu.it${href.startsWith('/') ? '' : '/'}${href}`;
+            
             lista.innerHTML += `
-                <div class="comunicazione-card">
-                    <h4>📄 ${link.textContent.trim()}</h4>
-                    <p class="autore-data">Dal sito dell'Istituto</p>
-                    <a href="${urlReale}" target="_blank" class="allegato-link">Apri Circolare 🔗</a>
+                <div class="comunicazione-card" style="margin-bottom: 10px; padding: 12px; background: rgba(0,0,0,0.25); border-radius: 8px; border-left: 3px solid #4da6ff;">
+                    <h4 style="margin: 0 0 5px 0; font-size: 14px;">📄 ${link.textContent.trim()}</h4>
+                    <p class="autore-data" style="margin: 0 0 8px 0; font-size: 11px; opacity: 0.7;">Sito IIS Giorgi-Woolf</p>
+                    <a href="${urlReale}" target="_blank" class="allegato-link" style="color: #4da6ff; text-decoration: none; font-size: 12px; display: inline-block;">Apri Circolare 🔗</a>
                 </div>
             `;
         });
-    } catch (error) {
-        lista.innerHTML = '<p class="error-message">Non riesco a collegarmi al sito della scuola in questo momento.</p>';
+    } catch (error) { 
+        console.error("Errore recupero circolari:", error);
+        lista.innerHTML = '<p class="error-message" style="color: #ff6666;">Impossibile connettersi al sito della scuola al momento.</p>'; 
     }
 }

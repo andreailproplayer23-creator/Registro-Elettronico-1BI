@@ -9,7 +9,7 @@ const firebaseConfig = {
 };
 
 // Inizializza Firebase
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -22,9 +22,12 @@ const loginBtn = document.getElementById('loginBtn');
 const loader = document.getElementById('loader');
 
 loginForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Evita il ricaricamento della pagina
+    e.preventDefault(); 
     
-    const email = emailInput.value;
+    // Pulisci le sessioni precedenti per evitare conflitti o cache vecchie
+    sessionStorage.clear();
+    
+    const email = emailInput.value.trim();
     const password = passwordInput.value;
     
     // UI Feedback
@@ -37,26 +40,27 @@ loginForm.addEventListener('submit', (e) => {
         .then((userCredential) => {
             const user = userCredential.user;
             
-            // Va a cercare il ruolo nel database Firestore
+            // Cerca il ruolo in Firestore
             db.collection("utenti").doc(user.uid).get()
                 .then((doc) => {
                     if (doc.exists) {
                         const userData = doc.data();
                         
-                        // Salva nome e cognome nel browser per mostrarli nell'header in alto a destra
+                        // Assicuriamoci che il ruolo sia letto bene (niente spazi, tutto minuscolo)
+                        const ruolo = (userData.ruolo || "docente").toLowerCase().trim();
+                        
+                        // Salva in sessione
                         sessionStorage.setItem("nomeUtente", userData.nome);
                         sessionStorage.setItem("cognomeUtente", userData.cognome);
-                        sessionStorage.setItem("ruoloUtente", userData.ruolo);
+                        sessionStorage.setItem("ruoloUtente", ruolo);
 
-                        // Smistamento in base al ruolo
-                        if (userData.ruolo === "docente") {
-                            window.location.href = "docente.html";
-                        } else if (userData.ruolo === "studente") {
-                            window.location.href = "studente.html";
-                        } else if (userData.ruolo === "admin") {
+                        // Smistamento preciso
+                        if (ruolo === "admin") {
                             window.location.href = "admin.html";
+                        } else if (ruolo === "studente") {
+                            window.location.href = "studente.html";
                         } else {
-                            showError("Ruolo non riconosciuto nel database.");
+                            window.location.href = "docente.html"; // Default
                         }
                     } else {
                         showError("Profilo database non trovato. Contatta l'amministratore.");
