@@ -6,3 +6,6 @@ const firebaseConfig = {
   messagingSenderId: "467293141486",
   appId: "1:467293141486:web:f8ee3f8fe8c1a092ef76ff"
 };
+
+https://tzmgogjgclzhgptaostj.supabase.co/rest/v1/
+sb_publishable_oPP6dEhLULujKfWzUFi-3g_nXPCYS6q

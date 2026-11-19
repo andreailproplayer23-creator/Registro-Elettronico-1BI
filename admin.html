@@ -78,7 +78,7 @@
                     <div class="input-group"><label>Ora Fine</label><input type="time" id="oraFine"></div>
                 </div>
                 <div class="input-group"><label>Descrizione</label><textarea id="descrizioneEvento" rows="3"></textarea></div>
-                <div class="file-group"><label>Allegati (Verifica le Rules in Firebase!)</label><input type="file" id="fileEvento" multiple></div>
+                <div class="file-group"><label>Allegati</label><input type="file" id="fileEvento" multiple></div>
                 <button type="submit" class="glass-btn">Salva Evento</button>
             </form>
         </div>
@@ -154,10 +154,11 @@
         </div>
     </div>
 
+    <!-- SCRIPT AGGIORNATI CON SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

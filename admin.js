@@ -1,4 +1,6 @@
-// INSERISCI LE TUE CHIAVI FIREBASE QUI
+// ==========================================
+// 1. CHIAVI FIREBASE (Database e Auth)
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyC3B-HBxOB020rKQTOLZQ1GrLbTP7zf_gk",
   authDomain: "registro-elettronico-1bi.firebaseapp.com",
@@ -11,8 +13,16 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
 
+// ==========================================
+// 2. CHIAVI SUPABASE (Solo per i File)
+// ==========================================
+const supabaseUrl = 'https://tzmgogjgclzhgptaostj.supabase.co/rest/v1/';
+const supabaseKey = 'sb_publishable_oPP6dEhLULujKfWzUFi-3g_nXPCYS6q'; // <-- INCOLLA QUI LA CHIAVE sb_publishable_...
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const BUCKET_NAME = 'storage-1bi';
+
+// --- VARIABILI GLOBALI CALENDARIO ---
 let dataCorrente = new Date();
 let modalitaVista = 'mese';
 let eventiLocali = [];
@@ -26,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
             generaCalendario();
             ascoltaEventiAgenda();
             ascoltaComunicazioni();
-            caricaCircolariSito(); // PROXY CORRETTO RIATTIVATO
+            caricaCircolariSito();
         }
     });
 });
@@ -52,22 +62,20 @@ document.getElementById('tuttaGiornata').addEventListener('change', function() {
 document.getElementById('modTuttaGiornata').addEventListener('change', function() { document.getElementById('modTimeGroup').classList.toggle('hidden', this.checked); });
 
 // ==========================================
-// FIX: CARICAMENTO CIRCOLARI (CORS PROXY)
+// CARICAMENTO CIRCOLARI (CORS PROXY)
 // ==========================================
 async function caricaCircolariSito() {
     try {
-        // Usiamo corsproxy.io che bypassa il blocco del sito della scuola
         const url = 'https://www.iisgiorgiwoolf.edu.it/gw/circolare/';
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
         
         const response = await fetch(proxyUrl);
         if (!response.ok) throw new Error("Errore nel download della pagina");
         const htmlTesto = await response.text();
         
-        // Estrazione molto basilare dei link (potresti dover adattare il selettore al codice sorgente esatto della scuola)
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlTesto, 'text/html');
-        const links = doc.querySelectorAll('a[href*="circolare"]'); // Cerca i link alle circolari
+        const links = doc.querySelectorAll('a[href*="circolare"]');
         
         const lista = document.getElementById('listaCircolari');
         lista.innerHTML = '';
@@ -77,7 +85,6 @@ async function caricaCircolariSito() {
             return;
         }
 
-        // Prende i primi 10
         Array.from(links).slice(0, 10).forEach(link => {
             const titolo = link.textContent.trim() || "Circolare";
             const href = link.href.startsWith('http') ? link.href : 'https://www.iisgiorgiwoolf.edu.it' + link.getAttribute('href');
@@ -90,7 +97,6 @@ async function caricaCircolariSito() {
         document.getElementById('listaCircolari').innerHTML = `<p class="info-text" style="color:#ef4444;">Accesso bloccato dal server della scuola.</p>`;
     }
 }
-
 
 // ==========================================
 // CALENDARIO E AGENDA
@@ -161,7 +167,7 @@ function renderEventi() {
 }
 
 // ==========================================
-// CREAZIONE, MODIFICA E ELIMINAZIONE EVENTI
+// CREAZIONE, MODIFICA E ELIMINAZIONE EVENTI (SUPABASE)
 // ==========================================
 function apriDettaglioEventoAdmin(id, evento) {
     document.getElementById('viewTipoEvento').textContent = evento.tipologia;
@@ -175,12 +181,10 @@ function apriDettaglioEventoAdmin(id, evento) {
         evento.allegati.forEach(f => list.innerHTML += `<a href="${f.url}" target="_blank" class="allegato-link">📎 ${f.name}</a>`);
     } else document.getElementById('viewAllegatiContainer').classList.add('hidden');
 
-    // BOTTONE ELIMINA
     document.getElementById('btnEliminaEvento').onclick = () => {
         if(confirm(`Attenzione: Stai eliminando l'evento. Procedere?`)) { db.collection("agenda").doc(id).delete(); chiudiModal('modalVisualizzaEvento'); }
     };
     
-    // BOTTONE MODIFICA
     document.getElementById('btnModificaEvento').onclick = () => {
         chiudiModal('modalVisualizzaEvento');
         document.getElementById('modEventoId').value = id;
@@ -212,17 +216,25 @@ document.getElementById('formModificaEvento').addEventListener('submit', async (
 });
 
 document.getElementById('formEvento').addEventListener('submit', async (e) => {
-    e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "Salvataggio..."; btn.disabled = true;
+    e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "Caricamento..."; btn.disabled = true;
     try {
         let fileUrls = []; const files = document.getElementById('fileEvento').files;
-        // FIX: Gestione corretta dei file iterati
+        
+        // UPLOAD SU SUPABASE
         if (files.length > 0) {
             for (let i = 0; i < files.length; i++) {
                 const f = files[i];
-                const s = await storage.ref(`agenda_allegati/${Date.now()}_${f.name}`).put(f);
-                fileUrls.push({ name: f.name, url: await s.ref.getDownloadURL() });
+                const safeName = f.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                const filePath = `agenda/${Date.now()}_${safeName}`;
+                
+                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
+                if (error) throw error;
+                
+                const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                fileUrls.push({ name: f.name, url: publicUrlData.publicUrl });
             }
         }
+
         await db.collection("agenda").add({
             autoreUid: auth.currentUser.uid, autoreNome: sessionStorage.getItem("nomeUtente"),
             tipologia: document.getElementById('tipoEvento').value, data: document.getElementById('dataEvento').value, tuttaGiornata: document.getElementById('tuttaGiornata').checked,
@@ -231,13 +243,13 @@ document.getElementById('formEvento').addEventListener('submit', async (e) => {
         });
         document.getElementById('formEvento').reset(); chiudiModal('modalEvento');
     } catch (err) { 
-        console.error("ERRORE UPLOAD FIREBASE:", err);
-        alert("Errore caricamento. Hai abilitato Storage in Firebase e impostato le Rules pubbliche in scrittura?"); 
+        console.error("ERRORE UPLOAD:", err);
+        alert("Errore caricamento: " + err.message); 
     } finally { btn.textContent = "Salva Evento"; btn.disabled = false; }
 });
 
 // ==========================================
-// BACHECA (COMUNICAZIONI): CREA, MODIFICA, ELIMINA
+// BACHECA (COMUNICAZIONI): CREA, MODIFICA, ELIMINA (SUPABASE)
 // ==========================================
 function ascoltaComunicazioni() {
     db.collection("bacheca_rappresentanti").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
@@ -285,12 +297,20 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
     e.preventDefault(); const btn = e.target.querySelector('button'); btn.textContent = "Pubblicazione..."; btn.disabled = true;
     try {
         let url = null, nome = null; const files = document.getElementById('fileAnnuncio').files;
-        // FIX: Gestione corretta file singolo in array
+        
+        // UPLOAD SU SUPABASE
         if (files.length > 0) { 
             const f = files[0];
-            const s = await storage.ref(`bacheca_allegati/${Date.now()}_${f.name}`).put(f); 
-            url = await s.ref.getDownloadURL(); nome = f.name; 
+            const safeName = f.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+            const filePath = `bacheca/${Date.now()}_${safeName}`;
+            
+            const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
+            if (error) throw error;
+            
+            const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+            url = publicUrlData.publicUrl; nome = f.name; 
         }
+
         await db.collection("bacheca_rappresentanti").add({
             autoreUid: auth.currentUser.uid, autoreNome: sessionStorage.getItem("nomeUtente"),
             titolo: document.getElementById('titoloAnnuncio').value, descrizione: document.getElementById('descrizioneAnnuncio').value,
@@ -298,7 +318,7 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
         });
         document.getElementById('formAnnuncio').reset(); chiudiModal('modalAnnuncio');
     } catch (err) { 
-        console.error("ERRORE UPLOAD FIREBASE:", err);
-        alert("Errore caricamento file. Controlla le regole del tuo Firebase Storage."); 
+        console.error("ERRORE UPLOAD:", err);
+        alert("Errore caricamento: " + err.message); 
     } finally { btn.textContent = "Pubblica"; btn.disabled = false; }
 });

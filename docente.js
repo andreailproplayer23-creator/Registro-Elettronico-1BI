@@ -1,4 +1,6 @@
-// INSERISCI LE TUE CHIAVI FIREBASE QUI
+// ==========================================
+// 1. CHIAVI FIREBASE (Database e Auth)
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyC3B-HBxOB020rKQTOLZQ1GrLbTP7zf_gk",
   authDomain: "registro-elettronico-1bi.firebaseapp.com",
@@ -11,7 +13,14 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
+
+// ==========================================
+// 2. CHIAVI SUPABASE (Solo per i File)
+// ==========================================
+const supabaseUrl = 'https://tzmgogjgclzhgptaostj.supabase.co/rest/v1/'; // <-- Es: https://tzmgogjgclzhgptaostj.supabase.co
+const supabaseKey = 'sb_publishable_oPP6dEhLULujKfWzUFi-3g_nXPCYS6q'; // <-- Es: sb_publishable_...
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const BUCKET_NAME = 'storage-1bi';
 
 // Avvio
 document.addEventListener("DOMContentLoaded", () => {
@@ -127,18 +136,29 @@ function apriDettaglioEvento(id, evento) {
     apriModal('modalVisualizzaEvento');
 }
 
-// 4. SALVATAGGIO EVENTO
+// 4. SALVATAGGIO EVENTO (SUPABASE)
 document.getElementById('formEvento').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
-    btn.textContent = "Salvataggio..."; btn.disabled = true;
+    btn.textContent = "Caricamento..."; btn.disabled = true;
     try {
         let fileUrls = [];
         const files = document.getElementById('fileEvento').files;
-        for (let i = 0; i < files.length; i++) {
-            const snap = await storage.ref(`agenda_allegati/${Date.now()}_${files[i].name}`).put(files[i]);
-            fileUrls.push({ name: files[i].name, url: await snap.ref.getDownloadURL() });
+        
+        if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const f = files[i];
+                const safeName = f.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                const filePath = `agenda/${Date.now()}_${safeName}`;
+                
+                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
+                if (error) throw error;
+                
+                const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                fileUrls.push({ name: f.name, url: publicUrlData.publicUrl });
+            }
         }
+
         await db.collection("agenda").add({
             autoreUid: auth.currentUser.uid,
             autoreNome: sessionStorage.getItem("nomeUtente") + " " + sessionStorage.getItem("cognomeUtente"),
@@ -153,7 +173,7 @@ document.getElementById('formEvento').addEventListener('submit', async (e) => {
         });
         document.getElementById('formEvento').reset();
         chiudiModal('modalEvento');
-    } catch (err) { alert("Errore: " + err.message); } 
+    } catch (err) { alert("Errore caricamento: " + err.message); } 
     finally { btn.textContent = "Salva Evento"; btn.disabled = false; }
 });
 
@@ -175,7 +195,7 @@ function ascoltaComunicazioni() {
     });
 }
 
-// 6. SALVATAGGIO COMUNICAZIONI RAPPRESENTANTI
+// 6. SALVATAGGIO COMUNICAZIONI RAPPRESENTANTI (SUPABASE)
 document.getElementById('formAnnuncio').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -183,10 +203,19 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
     try {
         let url = null, nome = null;
         const file = document.getElementById('fileAnnuncio').files[0];
+        
         if (file) {
-            const snap = await storage.ref(`bacheca_allegati/${Date.now()}_${file.name}`).put(file);
-            url = await snap.ref.getDownloadURL(); nome = file.name;
+            const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+            const filePath = `bacheca/${Date.now()}_${safeName}`;
+            
+            const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file);
+            if (error) throw error;
+            
+            const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+            url = publicUrlData.publicUrl; 
+            nome = file.name;
         }
+
         await db.collection("bacheca_rappresentanti").add({
             autoreUid: auth.currentUser.uid,
             autoreNome: sessionStorage.getItem("nomeUtente") + " " + sessionStorage.getItem("cognomeUtente"),
@@ -197,7 +226,7 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
         });
         document.getElementById('formAnnuncio').reset();
         chiudiModal('modalAnnuncio');
-    } catch (err) { alert("Errore: " + err.message); } 
+    } catch (err) { alert("Errore caricamento: " + err.message); } 
     finally { btn.textContent = "Pubblica Comunicazione"; btn.disabled = false; }
 });
 
@@ -206,18 +235,15 @@ async function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
     try {
         const target = encodeURIComponent('https://www.iisgiorgiwoolf.edu.it/gw/circolare/');
-        // Usa un proxy legale CORS per leggere la pagina
         const res = await fetch(`https://api.allorigins.win/get?url=${target}`);
         const data = await res.json();
         
         const doc = new DOMParser().parseFromString(data.contents, 'text/html');
-        // Estrae tutti i link che contengono la parola circolare
         const links = Array.from(doc.querySelectorAll('a')).filter(a => a.textContent.toLowerCase().includes('circolare'));
         
         lista.innerHTML = '';
         if(links.length === 0) lista.innerHTML = '<p class="info-text">Nessuna circolare trovata sul sito in questo momento.</p>';
         
-        // Prende le prime 15
         links.slice(0, 15).forEach(link => {
             const urlReale = link.href.startsWith('http') ? link.href : `https://www.iisgiorgiwoolf.edu.it${link.getAttribute('href')}`;
             lista.innerHTML += `
