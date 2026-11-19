@@ -9,7 +9,7 @@
 <body class="dashboard-body">
     
     <nav class="glass-navbar">
-        <div class="nav-logo" style="color: #ef4444;">Registro 1BI - Area Amministratore (Pieni Poteri)</div>
+        <div class="nav-logo" style="color: #ef4444;">Registro 1BI - Area Amministratore</div>
         <div class="nav-user">
             <span id="nomeUtenteDisplay">Caricamento...</span>
             <button id="logoutBtn" class="glass-btn-small">Esci</button>
@@ -27,18 +27,16 @@
             <section id="agenda" class="tab-content active">
                 <div class="section-header">
                     <h2>Supervisione Agenda</h2>
-                    <!-- NUOVI CONTROLLI CALENDARIO (Mesi e Visualizzazione) -->
                     <div class="calendar-controls" style="display: flex; align-items: center; gap: 15px;">
                         <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                             <button id="prevMonthBtn" class="glass-btn-small" style="padding: 6px 12px;">&lt;</button>
-                            <span id="currentMonthDisplay" style="color: #fafafa; font-weight: 600; font-size: 14px; min-width: 130px; text-align: center;">Novembre 2026</span>
+                            <span id="currentMonthDisplay" style="color: #fafafa; font-weight: 600; font-size: 14px; min-width: 130px; text-align: center;">...</span>
                             <button id="nextMonthBtn" class="glass-btn-small" style="padding: 6px 12px;">&gt;</button>
                         </div>
                         <button id="switchViewBtn" class="glass-btn-small">Vista Singola</button>
-                        <button id="btnNuovoEvento" class="glass-btn-small active" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">+ NUOVO EVENTO ADMIN</button>
+                        <button id="btnNuovoEvento" class="glass-btn-small active" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">+ NUOVO EVENTO</button>
                     </div>
                 </div>
-                <!-- Griglia Calendario -->
                 <div class="calendar-grid" id="calendarGrid"></div>
             </section>
 
@@ -51,12 +49,12 @@
                     <div class="bacheca-col">
                         <h3>Circolari Scuola</h3>
                         <div class="list-container" id="listaCircolari">
-                            <p class="info-text" style="text-align:center;">Sincronizzazione o Proxy in blocco...</p>
+                            <p class="info-text" style="text-align:center;">Sincronizzazione in corso...</p>
                         </div>
                     </div>
                     <div class="bacheca-col">
                         <div class="col-header">
-                            <h3>Comunicazioni (Tutte)</h3>
+                            <h3>Comunicazioni</h3>
                             <button id="btnNuovoAnnuncio" class="glass-btn-small active" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">+ NUOVO ANNUNCIO</button>
                         </div>
                         <div class="list-container" id="listaComunicazioni"></div>
@@ -66,77 +64,52 @@
         </main>
     </div>
 
-    <!-- MODAL EVENTO (Sistemato) -->
+    <!-- MODAL NUOVO EVENTO -->
     <div id="modalEvento" class="glass-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="chiudiModal('modalEvento')">&times;</span>
-            <h2>Forza Inserimento Evento</h2>
+            <h2>Nuovo Evento</h2>
             <form id="formEvento">
-                <!-- Label messa PRIMA dell'input -->
-                <div class="input-group">
-                    <label for="tipoEvento">Tipologia*</label>
-                    <input type="text" id="tipoEvento" placeholder="es. Verifica, Gita, Avviso" required>
-                </div>
-                <div class="input-group">
-                    <label for="dataEvento">Data Evento*</label>
-                    <input type="date" id="dataEvento" required>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="tuttaGiornata">
-                    <label for="tuttaGiornata">Tutta la giornata</label>
-                </div>
+                <div class="input-group"><label>Tipologia*</label><input type="text" id="tipoEvento" required></div>
+                <div class="input-group"><label>Data Evento*</label><input type="date" id="dataEvento" required></div>
+                <div class="checkbox-group"><input type="checkbox" id="tuttaGiornata"><label for="tuttaGiornata">Tutta la giornata</label></div>
                 <div class="time-group" id="timeGroup">
-                    <div class="input-group">
-                        <label for="oraInizio">Ora Inizio</label>
-                        <input type="time" id="oraInizio">
-                    </div>
-                    <div class="input-group">
-                        <label for="oraFine">Ora Fine</label>
-                        <input type="time" id="oraFine">
-                    </div>
+                    <div class="input-group"><label>Ora Inizio</label><input type="time" id="oraInizio"></div>
+                    <div class="input-group"><label>Ora Fine</label><input type="time" id="oraFine"></div>
                 </div>
-                <div class="input-group">
-                    <label for="descrizioneEvento">Descrizione</label>
-                    <textarea id="descrizioneEvento" rows="3" placeholder="Dettagli dell'evento..."></textarea>
-                </div>
-                <div class="file-group">
-                    <label>Allegati (Max 1GB)</label>
-                    <input type="file" id="fileEvento" multiple>
-                </div>
-                <button type="submit" class="glass-btn" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">Salva come Admin</button>
+                <div class="input-group"><label>Descrizione</label><textarea id="descrizioneEvento" rows="3"></textarea></div>
+                <div class="file-group"><label>Allegati (Verifica le Rules in Firebase!)</label><input type="file" id="fileEvento" multiple></div>
+                <button type="submit" class="glass-btn">Salva Evento</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL ANNUNCIO (Sistemato) -->
-    <div id="modalAnnuncio" class="glass-modal">
+    <!-- MODAL MODIFICA EVENTO -->
+    <div id="modalModificaEvento" class="glass-modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="chiudiModal('modalAnnuncio')">&times;</span>
-            <h2>Forza Comunicazione</h2>
-            <form id="formAnnuncio">
-                <!-- Label messa PRIMA dell'input -->
-                <div class="input-group">
-                    <label for="titoloAnnuncio">Titolo*</label>
-                    <input type="text" id="titoloAnnuncio" placeholder="es. Chiusura straordinaria" required>
+            <span class="close-btn" onclick="chiudiModal('modalModificaEvento')">&times;</span>
+            <h2>Modifica Evento</h2>
+            <form id="formModificaEvento">
+                <input type="hidden" id="modEventoId">
+                <div class="input-group"><label>Tipologia*</label><input type="text" id="modTipoEvento" required></div>
+                <div class="input-group"><label>Data Evento*</label><input type="date" id="modDataEvento" required></div>
+                <div class="checkbox-group"><input type="checkbox" id="modTuttaGiornata"><label for="modTuttaGiornata">Tutta la giornata</label></div>
+                <div class="time-group" id="modTimeGroup">
+                    <div class="input-group"><label>Ora Inizio</label><input type="time" id="modOraInizio"></div>
+                    <div class="input-group"><label>Ora Fine</label><input type="time" id="modOraFine"></div>
                 </div>
-                <div class="input-group">
-                    <label for="descrizioneAnnuncio">Descrizione</label>
-                    <textarea id="descrizioneAnnuncio" rows="4" placeholder="Testo della comunicazione..."></textarea>
-                </div>
-                <div class="file-group">
-                    <label>Allegato</label>
-                    <input type="file" id="fileAnnuncio">
-                </div>
-                <button type="submit" class="glass-btn" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">Pubblica come Admin</button>
+                <div class="input-group"><label>Descrizione</label><textarea id="modDescrizioneEvento" rows="3"></textarea></div>
+                <p style="font-size:12px; color:#a1a1aa; margin-bottom:15px;">Gli allegati non possono essere modificati qui. Per cambiarli, elimina e ricrea l'evento.</p>
+                <button type="submit" class="glass-btn">Salva Modifiche</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL VISUALIZZA/ELIMINA -->
+    <!-- MODAL VISUALIZZA EVENTO -->
     <div id="modalVisualizzaEvento" class="glass-modal">
         <div class="modal-content">
             <span class="close-btn" onclick="chiudiModal('modalVisualizzaEvento')">&times;</span>
-            <h2 id="viewTipoEvento" style="color:#ef4444;">Dettaglio (Modo Admin)</h2>
+            <h2 id="viewTipoEvento" style="color:#ef4444;">Dettaglio</h2>
             <div style="color: #e4e4e7;">
                 <p class="autore-data">AUTORE: <span id="viewAutore"></span></p>
                 <p class="autore-data">DATA: <span id="viewDataOrario"></span></p>
@@ -144,17 +117,47 @@
                 <div id="viewAllegatiContainer" class="hidden">
                     <div id="viewAllegatiList" class="allegati-list"></div>
                 </div>
-                <button id="btnEliminaEvento" class="glass-btn" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); margin-top: 20px; box-shadow: none;">Forza Eliminazione Evento</button>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="btnModificaEvento" class="glass-btn" style="flex: 1; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">✏️ Modifica</button>
+                    <button id="btnEliminaEvento" class="glass-btn" style="flex: 1; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);">🗑️ Elimina</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- MODAL NUOVO ANNUNCIO -->
+    <div id="modalAnnuncio" class="glass-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="chiudiModal('modalAnnuncio')">&times;</span>
+            <h2>Nuova Comunicazione</h2>
+            <form id="formAnnuncio">
+                <div class="input-group"><label>Titolo*</label><input type="text" id="titoloAnnuncio" required></div>
+                <div class="input-group"><label>Descrizione</label><textarea id="descrizioneAnnuncio" rows="4"></textarea></div>
+                <div class="file-group"><label>Allegato</label><input type="file" id="fileAnnuncio"></div>
+                <button type="submit" class="glass-btn">Pubblica</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL MODIFICA ANNUNCIO -->
+    <div id="modalModificaAnnuncio" class="glass-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="chiudiModal('modalModificaAnnuncio')">&times;</span>
+            <h2>Modifica Comunicazione</h2>
+            <form id="formModificaAnnuncio">
+                <input type="hidden" id="modAnnuncioId">
+                <div class="input-group"><label>Titolo*</label><input type="text" id="modTitoloAnnuncio" required></div>
+                <div class="input-group"><label>Descrizione</label><textarea id="modDescrizioneAnnuncio" rows="4"></textarea></div>
+                <p style="font-size:12px; color:#a1a1aa; margin-bottom:15px;">Il file allegato non può essere modificato. Se devi cambiarlo, elimina l'annuncio e ricrealo.</p>
+                <button type="submit" class="glass-btn">Salva Modifiche</button>
+            </form>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
-    
     <script src="admin.js"></script>
 </body>
 </html>
