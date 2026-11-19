@@ -22,13 +22,9 @@ def ottieni_dettagli_circolare(url_circolare):
         titolo_tag = soup.find('h1')
         titolo = titolo_tag.get_text(strip=True) if titolo_tag else "Titolo non trovato"
         
-        # Estrazione Numero più robusta
-        numero = ""
-        testo_pagina = soup.get_text(separator=' ', strip=True)
-        # Cerca nel titolo o nel testo
-        match = re.search(r'(Circolare|circ\.?)\s*n\.?\s*(\d+)', titolo + " " + testo_pagina, re.IGNORECASE)
-        if match:
-            numero = f"Circ. n.{match.group(2)}"
+        # Ignora la pagina generica del sito
+        if "le circolari" in titolo.lower() or titolo == "Titolo non trovato":
+            return None
 
         descrizione = ""
         p_tags = soup.find_all('p')
@@ -47,7 +43,6 @@ def ottieni_dettagli_circolare(url_circolare):
                     break 
                     
         return {
-            "numero": numero,
             "titolo": titolo,
             "descrizione": descrizione[:150] + "..." if len(descrizione) > 150 else descrizione,
             "url": link_pdf,
@@ -69,7 +64,6 @@ def estrai_circolari():
         link_categorie = set()
         for a in soup_start.find_all('a', href=True):
             href = a['href']
-            # FILTRO CRITICO: Prende solo le categorie dell'anno 2026-2027
             if '/gw/tipologia-circolare/' in href and '2026-2027' in href:
                 url_cat = URL_BASE + href if href.startswith('/') else href
                 link_categorie.add(url_cat)
@@ -88,13 +82,14 @@ def estrai_circolari():
                         links_visitati.add(url_completo)
                         link_circolari.append(url_completo)
         
-        print(f"Trovate {len(link_circolari)} circolari. Inizio download dati...")
+        print(f"Trovate {len(link_circolari)} circolari. Inizio download di TUTTI i dati...")
         
-        for url_circ in link_circolari[:15]: 
+        # Rimosso il limite [:15] per farle scaricare tutte
+        for url_circ in link_circolari: 
             dati = ottieni_dettagli_circolare(url_circ)
-            if dati and dati["titolo"] != "Titolo non trovato":
+            if dati:
                 circolari.append(dati)
-            time.sleep(0.5)
+            time.sleep(0.3) # Pausa leggermente inferiore
             
     except Exception as e:
         print(f"Errore: {e}")
@@ -108,7 +103,6 @@ def salva_su_firebase(circolari):
         
         payload = {
             "fields": {
-                "numero": {"stringValue": circ.get("numero", "")},
                 "titolo": {"stringValue": circ.get("titolo", "")},
                 "descrizione": {"stringValue": circ.get("descrizione", "")},
                 "url": {"stringValue": circ.get("url", "")},
@@ -118,7 +112,7 @@ def salva_su_firebase(circolari):
         }
         
         requests.patch(doc_url, json=payload)
-        print(f"[OK] Salvata: {circ.get('numero', '')} {circ['titolo'][:30]}...")
+        print(f"[OK] Salvata: {circ['titolo'][:40]}...")
 
 if __name__ == "__main__":
     lista = estrai_circolari()
