@@ -393,9 +393,6 @@ function caricaCircolariSito() {
             lista.innerHTML = `
                 <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
                     <p style="color: #aaa; margin-bottom: 15px; font-size: 13px;">Nessuna circolare sincronizzata al momento.</p>
-                    <a href="https://www.iisgiorgiwoolf.edu.it/gw/circolare/" target="_blank" class="glass-btn-small" style="text-decoration: none; display: inline-block;">
-                        Vai al sito dell'Istituto 🔗
-                    </a>
                 </div>
             `;
             return;
@@ -403,11 +400,25 @@ function caricaCircolariSito() {
 
         snapshot.forEach((doc) => {
             const c = doc.data();
+            
+            // Crea una stringa con il numero se esiste
+            const numeroDisplay = c.numero ? `<span style="color: #4da6ff; font-weight: bold; margin-right: 5px;">${c.numero}</span>` : '';
+            
+            // Crea una stringa per la descrizione se esiste
+            const descrizioneDisplay = c.descrizione ? `<p style="font-size: 11px; color: #aaa; margin: 5px 0 8px 0; line-height: 1.4;">${c.descrizione}</p>` : '';
+            
+            // Controlla se è un PDF per cambiare l'etichetta del bottone
+            const isPdf = c.url.toLowerCase().endsWith('.pdf');
+            const testoBottone = isPdf ? 'Scarica PDF ⬇️' : 'Apri Dettagli 🔗';
+
             lista.innerHTML += `
-                <div class="comunicazione-card">
-                    <h4>📄 ${c.titolo}</h4>
-                    <p class="autore-data">IIS Giorgi-Woolf</p>
-                    <a href="${c.url}" target="_blank" class="allegato-link">Apri Circolare 🔗</a>
+                <div class="comunicazione-card" style="margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; border-left: 4px solid #4da6ff;">
+                    <h4 style="margin: 0 0 5px 0; font-size: 14px; line-height: 1.4;">${numeroDisplay}${c.titolo}</h4>
+                    ${descrizioneDisplay}
+                    <p class="autore-data" style="margin: 0 0 10px 0; font-size: 10px; opacity: 0.6;">IIS Giorgi-Woolf</p>
+                    <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="glass-btn-small" style="text-decoration: none; display: inline-block; background: rgba(77, 166, 255, 0.15); color: #4da6ff; padding: 6px 12px; font-size: 11px;">
+                        ${testoBottone}
+                    </a>
                 </div>
             `;
         });
