@@ -382,6 +382,68 @@ document.getElementById('formModificaAnnuncio').addEventListener('submit', async
 // ==========================================
 // CIRCOLARI SCUOLA
 // ==========================================
+// 1. Inserisci questa funzione fuori/sopra caricaCircolariSito
+window.forzaDownloadPdf = function(url, titoloOrig) {
+    // Usiamo un proxy gratuito per aggirare il blocco di sicurezza del browser e "catturare" il PDF
+    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(url);
+    const nomeFile = titoloOrig.replace(/[^a-zA-Z0-9 ]/g, "") + ".pdf";
+    
+    fetch(proxyUrl)
+        .then(response => {
+            if (!response.ok) throw new Error("Network response was not ok");
+            return response.blob();
+        })
+        .then(blob => {
+            // Crea un file locale invisibile e forza il click per scaricarlo
+            const urlBlob = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = urlBlob;
+            link.download = nomeFile;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(urlBlob); // Pulisce la memoria
+        })
+        .catch(err => {
+            console.error("Download forzato fallito, fallback:", err);
+            // Fallback: se il proxy fallisce, apre comunque il file in una NUOVA scheda (non nella stessa)
+            window.open(url, '_blank');
+        });
+};
+
+
+// 2. Aggiorna SOLO la parte del pulsante "Scarica" dentro caricaCircolariSito()
+// 1. Inserisci questa funzione fuori/sopra caricaCircolariSito
+window.forzaDownloadPdf = function(url, titoloOrig) {
+    // Usiamo un proxy gratuito per aggirare il blocco di sicurezza del browser e "catturare" il PDF
+    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(url);
+    const nomeFile = titoloOrig.replace(/[^a-zA-Z0-9 ]/g, "") + ".pdf";
+    
+    fetch(proxyUrl)
+        .then(response => {
+            if (!response.ok) throw new Error("Network response was not ok");
+            return response.blob();
+        })
+        .then(blob => {
+            // Crea un file locale invisibile e forza il click per scaricarlo
+            const urlBlob = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = urlBlob;
+            link.download = nomeFile;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(urlBlob); // Pulisce la memoria
+        })
+        .catch(err => {
+            console.error("Download forzato fallito, fallback:", err);
+            // Fallback: se il proxy fallisce, apre comunque il file in una NUOVA scheda (non nella stessa)
+            window.open(url, '_blank');
+        });
+};
+
+
+// 2. Aggiorna SOLO la parte del pulsante "Scarica" dentro caricaCircolariSito()
 function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
     if (!lista) return;
@@ -401,26 +463,25 @@ function caricaCircolariSito() {
         snapshot.forEach((doc) => {
             const c = doc.data();
             
-            // Format Numero e Titolo
-            const numeroDisplay = c.numero ? `<span style="color: #4da6ff; font-weight: bold; margin-right: 8px;">${c.numero}</span>` : '';
             const descrizioneDisplay = c.descrizione ? `<p style="font-size: 11px; color: #aaa; margin: 5px 0 8px 0; line-height: 1.4;">${c.descrizione}</p>` : '';
-            
+            const titoloPulito = c.titolo.replace(/'/g, "\\'");
+
             lista.innerHTML += `
                 <div class="comunicazione-card" style="margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; border-left: 4px solid #4da6ff;">
-                    <h4 style="margin: 0 0 5px 0; font-size: 14px; line-height: 1.4;">${numeroDisplay}${c.titolo}</h4>
+                    <h4 style="margin: 0 0 5px 0; font-size: 14px; line-height: 1.4;">${c.titolo}</h4>
                     ${descrizioneDisplay}
                     <p class="autore-data" style="margin: 0 0 10px 0; font-size: 10px; opacity: 0.6;">IIS Giorgi-Woolf - A.S. 2026/2027</p>
                     
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <!-- Pulsante Visualizza -->
+                        <!-- Pulsante Visualizza (Apre in nuova scheda, INVARIATO) -->
                         <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="glass-btn-small" style="text-decoration: none; background: rgba(77, 166, 255, 0.15); color: #4da6ff; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
                             👁️ Visualizza
                         </a>
                         
-                        <!-- Pulsante Scarica -->
-                        <a href="${c.url}" download class="glass-btn-small" style="text-decoration: none; background: rgba(77, 255, 166, 0.15); color: #4dffa6; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
+                        <!-- Nuovo Pulsante Scarica con JavaScript -->
+                        <button onclick="forzaDownloadPdf('${c.url}', '${titoloPulito}')" class="glass-btn-small" style="cursor: pointer; border: none; background: rgba(77, 255, 166, 0.15); color: #4dffa6; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
                             ⬇️ Scarica PDF
-                        </a>
+                        </button>
                     </div>
                 </div>
             `;
