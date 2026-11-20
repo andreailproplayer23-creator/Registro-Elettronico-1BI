@@ -390,67 +390,6 @@ document.getElementById('formAnnuncio').addEventListener('submit', async (e) => 
 // ==========================================
 // CIRCOLARI SCUOLA
 // ==========================================
-// 1. Inserisci questa funzione fuori/sopra caricaCircolariSito
-window.forzaDownloadPdf = function(url, titoloOrig) {
-    // Usiamo un proxy gratuito per aggirare il blocco di sicurezza del browser e "catturare" il PDF
-    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(url);
-    const nomeFile = titoloOrig.replace(/[^a-zA-Z0-9 ]/g, "") + ".pdf";
-    
-    fetch(proxyUrl)
-        .then(response => {
-            if (!response.ok) throw new Error("Network response was not ok");
-            return response.blob();
-        })
-        .then(blob => {
-            // Crea un file locale invisibile e forza il click per scaricarlo
-            const urlBlob = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = urlBlob;
-            link.download = nomeFile;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(urlBlob); // Pulisce la memoria
-        })
-        .catch(err => {
-            console.error("Download forzato fallito, fallback:", err);
-            // Fallback: se il proxy fallisce, apre comunque il file in una NUOVA scheda (non nella stessa)
-            window.open(url, '_blank');
-        });
-};
-
-
-// 2. Aggiorna SOLO la parte del pulsante "Scarica" dentro caricaCircolariSito()
-// 1. Inserisci questa funzione fuori/sopra caricaCircolariSito
-window.forzaDownloadPdf = function(url, titoloOrig) {
-    // Usiamo un proxy gratuito per aggirare il blocco di sicurezza del browser e "catturare" il PDF
-    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(url);
-    const nomeFile = titoloOrig.replace(/[^a-zA-Z0-9 ]/g, "") + ".pdf";
-    
-    fetch(proxyUrl)
-        .then(response => {
-            if (!response.ok) throw new Error("Network response was not ok");
-            return response.blob();
-        })
-        .then(blob => {
-            // Crea un file locale invisibile e forza il click per scaricarlo
-            const urlBlob = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = urlBlob;
-            link.download = nomeFile;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(urlBlob); // Pulisce la memoria
-        })
-        .catch(err => {
-            console.error("Download forzato fallito, fallback:", err);
-            // Fallback: se il proxy fallisce, apre comunque il file in una NUOVA scheda (non nella stessa)
-            window.open(url, '_blank');
-        });
-};
-
-
 // 2. Aggiorna SOLO la parte del pulsante "Scarica" dentro caricaCircolariSito()
 function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
