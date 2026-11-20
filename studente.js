@@ -271,6 +271,47 @@ window.forzaDownloadPdf = function(url, titoloOrig) {
 
 
 // 2. Aggiorna SOLO la parte del pulsante "Scarica" dentro caricaCircolariSito()
+// 1. Funzione per forzare il download (messa fuori così funziona per tutti i pulsanti)
+window.forzaDownloadPdf = async function(url, titoloOrig, event) {
+    if(event) event.preventDefault();
+    
+    const targetBtn = event.currentTarget;
+    const testoOriginale = targetBtn.innerHTML;
+    
+    targetBtn.innerHTML = "⏳ Download...";
+    
+    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    const nomeFile = titoloOrig.replace(/[^a-zA-Z0-9 ]/g, "") + ".pdf";
+
+    try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error("Errore di rete");
+        
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = nomeFile;
+        document.body.appendChild(a);
+        
+        a.click();
+        
+        setTimeout(() => {
+            window.URL.revokeObjectURL(blobUrl);
+            document.body.removeChild(a);
+        }, 1000);
+        
+    } catch (error) {
+        console.error("Download bloccato:", error);
+        window.open(url, '_blank'); // Fallback in caso di blocco totale
+    } finally {
+        targetBtn.innerHTML = testoOriginale;
+    }
+};
+
+// 2. La funzione che carica e mostra le circolari a schermo
 function caricaCircolariSito() {
     const lista = document.getElementById('listaCircolari');
     if (!lista) return;
@@ -300,13 +341,11 @@ function caricaCircolariSito() {
                     <p class="autore-data" style="margin: 0 0 10px 0; font-size: 10px; opacity: 0.6;">IIS Giorgi-Woolf - A.S. 2026/2027</p>
                     
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <!-- Pulsante Visualizza (Apre in nuova scheda, INVARIATO) -->
                         <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="glass-btn-small" style="text-decoration: none; background: rgba(77, 166, 255, 0.15); color: #4da6ff; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
                             👁️ Visualizza
                         </a>
                         
-                        <!-- Nuovo Pulsante Scarica con JavaScript -->
-                        <button onclick="forzaDownloadPdf('${c.url}', '${titoloPulito}')" class="glass-btn-small" style="cursor: pointer; border: none; background: rgba(77, 255, 166, 0.15); color: #4dffa6; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
+                        <button onclick="forzaDownloadPdf('${c.url}', '${titoloPulito}', event)" class="glass-btn-small" style="cursor: pointer; border: none; background: rgba(77, 255, 166, 0.15); color: #4dffa6; padding: 6px 12px; font-size: 11px; border-radius: 5px;">
                             ⬇️ Scarica PDF
                         </button>
                     </div>
@@ -318,3 +357,4 @@ function caricaCircolariSito() {
         lista.innerHTML = '<p class="error-message">Errore nel caricamento delle circolari.</p>';
     });
 }
+// --- FINE CODICE CIRCOLARI ---
